@@ -7,6 +7,9 @@
     "dev": "node scripts/dev.mjs",
     "build": "node scripts/build.mjs",
     "test": "node --test tests/*.test.js",
-    "check": "node --check src/app.js && node --check src/data.js && node --check src/cohort.js && node --check src/clinical-fixture.js && node --check src/patients.js && node --check src/explorer.js && node --check src/ranking.js && node --check src/review-fixture.js && node --check src/patient-review.js"
+    "check": "node scripts/check.mjs"
+  },
+  "dependencies": {
+    "three": "0.187.0"
   }
 }

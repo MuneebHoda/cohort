@@ -1,0 +1,59 @@
+{
+  "source": "syn217_demo_case.json",
+  "synthetic_only": true,
+  "note": "Independent check of the existing demonstration rules; not clinical validation. No new applicability gate introduced.",
+  "patient_fields": [
+    "age_years",
+    "clinically_unstable_cardiac_disease",
+    "controlled_hypertension",
+    "ecog",
+    "egfr_ml_min_1_73m2",
+    "hepatic_status",
+    "id",
+    "note",
+    "stable_cardiac_history",
+    "stable_type2_diabetes",
+    "strong_cyp3a_inhibitor"
+  ],
+  "scenarios": {
+    "original": {
+      "MEETS_MODELED_RULES": 4,
+      "EXCLUDED": 15,
+      "INDETERMINATE": 1
+    },
+    "proposed": {
+      "MEETS_MODELED_RULES": 10,
+      "EXCLUDED": 8,
+      "INDETERMINATE": 2
+    }
+  },
+  "age_groups": [
+    {
+      "age_group": "<65",
+      "screened_n": 9,
+      "original_matching_n": 3,
+      "proposed_matching_n": 5
+    },
+    {
+      "age_group": "65–74",
+      "screened_n": 9,
+      "original_matching_n": 1,
+      "proposed_matching_n": 3
+    },
+    {
+      "age_group": "75+",
+      "screened_n": 2,
+      "original_matching_n": 0,
+      "proposed_matching_n": 2
+    }
+  ],
+  "newly_matching_ids": [
+    "P02",
+    "P03",
+    "P09",
+    "P11",
+    "P13",
+    "P19"
+  ],
+  "regression_check": "All 40 patient/scenario classifications agree with supplied expected_results."
+}

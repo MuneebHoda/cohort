@@ -1,0 +1,110 @@
+import { product, study, criteria, sources, patients, anchorPatients, clinicalConfig } from './data.js';
+import { resolveScenario } from './cohort.js';
+import { renderPopulation } from './explorer.js';
+import { rankCandidates, getReviewProfile } from './ranking.js';
+import { escape, icon } from './ui.js';
+import { visibleRecords } from './workspace.js';
+
+export function renderStudyTool(tool, workspace) {
+  const run = workspace.run;
+  const context = workspace.state;
+  const state = { stage: tool, criterion: context.criterion || 'renal', revision: context.scenarioId !== 'original', populationView: context.populationView || 'proposed', record: context.selectedPatientId, scenario: context.scenarioId === 'original' ? 'renal-revision' : context.scenarioId, dataset: context.dataset, filter: context.filters.status === 'eligible' ? 'all' : context.filters.status, boundary: context.boundary || 'all', reviewMode: 'population', rankingGroup: context.filters.status };
+  const baseline = run.original;
+  const potential = run.proposed;
+  const currentPatients = () => run.patients;
+  const requestedScenario = () => state.revision ? state.scenario : false;
+  const activeGate = () => run.current.gate;
+  const badge = criterion => `<span class="badge ${criterion.tone}">${escape(criterion.disposition)}</span>`;
+function highlightWording(text, phrase, tag) {
+  if (!phrase || !text.includes(phrase)) return escape(text);
+  const start = text.indexOf(phrase);
+  return `${escape(text.slice(0, start))}<${tag}>${escape(phrase)}</${tag}>${escape(text.slice(start + phrase.length))}`;
+}
+
+
+function sourceButton(sourceId, compact = false) {
+  const source = sources.find((item) => item.id === sourceId);
+  if (!source) return '';
+  return `<button class="source-row ${compact ? 'compact' : ''}" data-source="${escape(source.id)}">${icon(source.type === 'Official guidance' ? 'book' : source.type === 'Synthetic patient data' ? 'people' : 'file')}<span><span class="source-title">${escape(source.shortTitle || source.title)}</span><span class="source-meta">${escape(source.type)} <span>·</span> ${escape(source.section)}</span></span>${icon('chevron')}</button>`;
+}
+
+function miniDots() {
+  return `<div class="mini-dots" aria-hidden="true">${potential.records.map((record) => `<span class="mini-dot ${record.status} ${record.changed ? 'changed' : ''}"></span>`).join('')}</div>`;
+}
+
+function populationPreview() {
+  const delta = potential.eligible - baseline.eligible;
+  return `<aside class="population-preview"><div class="eyebrow">CRITERION 01 · RENAL REVISION</div><div class="preview-title"><span>${delta}</span> more<br> <em>possibilities.</em></div><p>A narrower criterion could open the study to more of this synthetic population.</p>${miniDots()}<div class="preview-counts"><div><span>Original</span><strong>${baseline.eligible}<small> / ${baseline.total}</small></strong></div>${icon('arrow')}<div class="teal-text"><span>With revision</span><strong>${potential.eligible}<small> / ${baseline.total}</small></strong></div></div><div class="preview-note">${icon(activeGate().active ? 'check' : 'info')}<span>${activeGate().active ? 'Approved demo rule active' : 'Approved-rule preview · not active'}</span></div><button class="button full secondary" data-stage="population">Explore population ${icon('arrow')}</button><div class="preview-foot">${baseline.total} synthetic records. Every dot is a record.<br> Requires review: ${baseline.indeterminate} original / ${potential.indeterminate} revised.</div></aside>`;
+}
+
+function reviewPage() {
+  const criterion = criteria.find((item) => item.id === state.criterion);
+  return `<div class="section-heading"><div><div class="eyebrow">THE ELIGIBILITY REVIEW</div><h2>A closer look at who gets in.</h2><p>Follow the evidence. Question the exclusion. See the difference.</p></div><span class="sample-label">${icon('flask')} Prepared sample review</span></div>
+    <div class="review-layout"><aside class="criteria-sidebar"><div class="sidebar-heading"><h3>Criteria in focus</h3><span>${String(criteria.length).padStart(2, '0')}</span></div><div class="criteria-list">${criteria.map((item) => `<button class="criterion-card ${state.criterion === item.id ? 'selected' : ''}" data-criterion="${item.id}" aria-pressed="${state.criterion === item.id}"><span class="criterion-top"><span class="mono">${escape(item.number)}</span>${icon(state.criterion === item.id ? 'arrow' : 'chevron')}</span><strong>${escape(item.title)}</strong>${badge(item)}</button>`).join('')}</div><div class="sidebar-note">${icon('shield')}<p>Thoughtful inclusion starts<br> with evidence.<br> <span>All findings require expert review.</span></p></div><div class="sidebar-bottom"><span class="tiny-label">THIS REVIEW</span><div>${criteria.length} criteria <span>·</span> 1 demo-approved revision</div><button class="text-button" data-stage="protocol">View study context ${icon('arrow')}</button></div></aside>
+    <article class="review-document" aria-label="Selected criterion review"><div class="document-topline"><span class="eyebrow">CRITERION ${escape(criterion.number)} <span class="muted">/ ${String(criteria.length).padStart(2, '0')}</span></span>${badge(criterion)}</div><h3>${escape(criterion.title)}</h3><p class="document-deck">${criterion.id === 'renal' ? 'A broad exclusion. A more precise possibility.' : criterion.id === 'ddi' ? 'A documented interaction. A reason to retain.' : criterion.tone === 'neutral' ? 'A fixed criterion. An independent requirement.' : 'An unanswered question. A reason to look closer.'}</p>
+    <div class="wording-comparison ${criterion.proposed ? '' : 'single'}"><section class="wording original"><div class="tiny-label">${icon('file')} ORIGINAL PROTOCOL</div><p>${highlightWording(criterion.original, criterion.originalHighlight, "del")}</p><span class="wording-ref">Protocol v1.0 · §${criterion.number}</span></section>${criterion.proposed ? `<section class="wording proposed"><div class="tiny-label">${icon('spark')} PROPOSED REVISION</div><p>${highlightWording(criterion.proposed, criterion.proposedHighlight, "ins")}</p><span class="wording-ref">Approved for synthetic demo only · Ehsan review required</span></section>` : `<section class="wording disposition-${criterion.tone}"><div class="tiny-label">${icon(criterion.tone === 'neutral' ? 'shield' : 'info')} REVIEW DISPOSITION</div><p>${criterion.tone === 'neutral' ? 'Retain the original restriction in the modeled scenario.' : 'Withhold a replacement until drug-specific evidence is available.'}</p><span class="wording-ref">${criterion.tone === 'neutral' ? 'Restriction remains active' : 'No revision proposed'}</span></section>`}</div>
+    <section class="rationale"><h4>${icon('book')}${criterion.id === 'renal' ? 'Why reconsider this?' : criterion.tone === 'neutral' ? 'Why retain this?' : 'What do we still need?'}</h4><p>${escape(criterion.rationale)}</p></section>
+    <section class="evidence-section"><div class="subsection-heading"><h4>Follow the evidence</h4><span>${criterion.sourceIds.length} SOURCE${criterion.sourceIds.length === 1 ? '' : 'S'}</span></div><div class="source-list">${criterion.sourceIds.length ? criterion.sourceIds.map((id) => sourceButton(id)).join('') : '<p class="protocol-scope-note">This original inclusion is defined by the fictional adult-study scope. No proposed drug-specific change is available.</p>'}</div></section>
+    ${criterion.missing.length ? `<section class="missing-note">${icon('info')}<div><strong>${criterion.tone === 'amber' ? 'Evidence gap' : 'Before a real-world decision'}</strong><p>${criterion.missing.map(escape).join(' ')}</p></div></section>` : ''}
+    <div class="document-action">${criterion.proposed ? `<div><span class="tiny-label">ONE CHANGE, MEASURABLE IMPACT</span><p>Include this revision in the comparison.</p></div><button class="button ${activeGate().active ? 'included' : 'primary'}" data-action="include-renal" aria-pressed="${activeGate().active}">${icon(activeGate().active ? 'check' : 'plus')}${activeGate().active ? 'Revision included' : 'Include approved demo rule'}</button>` : `<div><span class="tiny-label">REVIEW OUTCOME</span><p>${criterion.tone === 'neutral' ? 'This exclusion remains active in all scenarios.' : 'The original exclusion remains active pending evidence.'}</p></div>${icon(criterion.tone === 'neutral' ? 'shield' : 'info')}`}</div>
+    </article>${populationPreview()}</div>
+    <div class="workspace-caption"><span>${icon('info')} Prepared findings, fictional drug evidence, real questions.</span><button class="text-button" data-stage="population">Next: explore the population ${icon('arrow')}</button></div>`;
+}
+
+function protocolPage() {
+  return `<div class="section-heading"><div><div class="eyebrow">THE STUDY, IN CONTEXT</div><h2>Good decisions start with the whole picture.</h2><p>A fictional protocol. ${criteria.length} explicit criteria. One evidence-gated review.</p></div><span class="sample-label">${icon('flask')} Bundled sample study</span></div>
+  <div class="protocol-layout"><article class="protocol-document"><div class="document-topline"><span class="eyebrow">STUDY BRIEF</span><span class="outline-label">PHASE III · ONCOLOGY</span></div><div class="protocol-title"><div class="protocol-stamp">${icon('file')}</div><div><span class="mono">${escape(study.id)} / PROTOCOL v1.0</span><h3>${escape(study.title)}</h3></div></div><p class="protocol-summary">${escape(study.summary)}</p><p class="study-scope">${escape(study.context)}</p><div class="study-meta-grid"><div><span class="tiny-label">INVESTIGATIONAL PRODUCT</span><strong>${escape(study.drug)} <span>· Fictional</span></strong></div><div><span class="tiny-label">POPULATION</span><strong>Adults with advanced NSCLC</strong></div><div><span class="tiny-label">REVIEW SCOPE</span><strong>${criteria.length} modeled criteria · inclusion + exclusion</strong></div><div><span class="tiny-label">COHORT</span><strong>${baseline.total} synthetic records</strong></div></div><section class="protocol-criteria"><div class="subsection-heading"><h4>Criteria under review</h4><span>PROTOCOL v1.0</span></div>${criteria.map((item) => `<button class="protocol-criterion" data-criterion="${item.id}"><span class="mono">${item.number}</span><span><strong>${escape(item.title)}</strong><small>${escape(item.original)}</small></span>${icon('arrow')}</button>`).join('')}</section><div class="document-action"><p>Start with the criterion. Stay close to the evidence.</p><button class="button primary" data-stage="review">Open sample review ${icon('arrow')}</button></div></article><aside class="protocol-aside"><div class="eyebrow">YOUR SOURCE LIBRARY</div><h3>A clear line<br> back to the source.</h3><p>Guidance, drug-specific evidence, and population data each play a distinct role.</p><div class="source-library">${sources.map((source) => sourceButton(source.id)).join('')}</div><div class="method-note">${icon('info')}<div><strong>A demonstration, by design.</strong><p>The review is prepared sample content. Population results are calculated locally from versioned, evidence-gated rules. Numerical boundaries come from the supplied synthetic case and require Ehsan’s review. No live model calls or patient data.</p></div></div></aside></div>`;
+}
+
+function populationPage() {
+  return renderPopulation({ state, patients: currentPatients(), baseline,
+    selected: run.current,
+    config: clinicalConfig, criteria, sources, escape, icon, sourceButton,
+    linkedIds: visibleRecords(run, { ...context.filters, status: 'all' }).map(record => record.id) });
+}
+
+function reportPage() {
+  const selected = run.current;
+  const gate = selected.gate;
+  const ranked = rankCandidates(selected);
+  const changedRecords = selected.records.filter(record => record.statusChanged);
+  const selectedRecord = selected.records.find(record => record.id === state.record);
+  const selectedProfile = selectedRecord ? getReviewProfile(selectedRecord) : null;
+  const sourceName = id => sources.find(source => source.id === id)?.shortTitle || id;
+  return `<div class="section-heading no-print">
+    <div><div class="eyebrow">THE REVIEW, ON RECORD</div><h2>A considered decision. A clear paper trail.</h2><p>Protocol, evidence gate, patient changes, and assumptions in one report.</p></div>
+    <button class="button primary" data-action="print">${icon('print')} Print report</button>
+  </div>
+  <article class="report-document">
+    <div class="report-masthead"><div class="report-wordmark">${escape(product.wordmark)}<span> / RULE COMPARISON REPORT</span></div><span class="outline-label">SYNTHETIC DEMONSTRATION</span></div>
+    <div class="report-intro"><div class="eyebrow">${escape(study.id)} · PROTOCOL ${escape(clinicalConfig.protocol.version)}</div><h3>${escape(study.title)}</h3><p>${state.dataset === 'casebook' ? '20 supplied anchor cases' : `${baseline.total} reproducible records · seed 217`} · ${criteria.length} independently evaluated criteria</p></div>
+    <div class="report-summary"><div><span class="tiny-label">MODELED CRITERIA</span><strong>${String(criteria.length).padStart(2, '0')}</strong></div><div><span class="tiny-label">ACTIVE REVISIONS</span><strong>${String(gate.ruleIds.length).padStart(2, '0')}</strong></div><div><span class="tiny-label">ACTIVE SCENARIO</span><strong class="scenario-name">${gate.active ? 'Renal demo revision' : 'Original protocol'}</strong></div></div>
+    <section><h4>01 <span>Evidence gate & rule provenance</span></h4>
+      <p><strong>Requested:</strong> ${gate.requested ? escape(gate.label) : 'No revision'}${gate.scenarioVersion ? ` · v${escape(gate.scenarioVersion)}` : ''}. <strong>Result:</strong> ${gate.active ? 'Approved demonstration rule active' : gate.requested ? 'Withheld — original rules active' : 'Original protocol active'}.</p>
+      <p>${gate.reasons.map(escape).join(' ') || 'No proposed rule is selected.'}</p>
+      ${gate.active ? `<p class="report-proposal"><strong>Applied rule:</strong> ${gate.ruleIds.map(escape).join(', ')}. <strong>Supporting fictional evidence:</strong> ${gate.evidenceIds.map(id => `${escape(id)} (${escape(sourceName(id))})`).join('; ')}.</p>` : ''}
+      <div class="report-table-wrap"><table><caption class="sr-only">Original and selected rule identifiers</caption><thead><tr><th scope="col">Criterion</th><th scope="col">Restriction</th><th scope="col">Original rule</th><th scope="col">Active rule</th></tr></thead><tbody>${clinicalConfig.protocol.criteria.map(criterion => {
+        const revision = gate.revisions.find(item => item.criterionId === criterion.id);
+        return `<tr><th scope="row">${escape(criterion.title)}</th><td>${criterion.fixed ? 'Fixed' : 'Revisable'}</td><td>${escape(criterion.ruleId)}</td><td>${escape(revision?.ruleId || criterion.ruleId)}</td></tr>`;
+      }).join('')}</tbody></table></div>
+    </section>
+    <section><h4>02 <span>Findings & dispositions</span></h4>${criteria.map(item => `<div class="report-finding"><div class="report-finding-heading"><h5>${escape(item.title)}</h5>${badge(item)}</div><p><strong>Original criterion.</strong> ${escape(item.original)}</p><p><strong>Rationale.</strong> ${escape(item.rationale)}</p>${item.proposed ? `<p class="report-proposal"><strong>${gate.active ? 'Active synthetic rule.' : 'Candidate · not active.'}</strong> ${escape(item.proposed)}</p>` : ''}${item.missing.length ? `<p><strong>Review needed.</strong> ${item.missing.map(escape).join(' ')}</p>` : ''}<div class="report-references">${item.sourceIds.length ? `References: ${item.sourceIds.map(id => `${escape(id)} · ${escape(sourceName(id))}`).join('; ')}` : 'Source: configured fictional protocol scope.'}</div></div>`).join('')}</section>
+    <section><h4>03 <span>Population comparison</span></h4><p>${baseline.total} synthetic records; every active criterion is evaluated. Known failure takes precedence over uncertainty. Unknown observations remain in the audit; no missing value silently passes.</p>
+      <div class="report-table-wrap"><table><caption class="sr-only">Original and selected population counts</caption><thead><tr><th scope="col">Modeled outcome</th><th scope="col">Original</th><th scope="col">Selected</th><th scope="col">Change</th></tr></thead><tbody>${[['eligible', 'Meets modeled criteria'], ['excluded', 'Does not meet modeled criteria'], ['indeterminate', 'Indeterminate / requires review']].map(([key, label]) => `<tr><th scope="row">${label}</th><td>${baseline[key]}</td><td>${selected[key]}</td><td>${selected[key] - baseline[key] > 0 ? '+' : ''}${selected[key] - baseline[key]}</td></tr>`).join('')}<tr class="table-total"><th scope="row">Total</th><td>${baseline.total}</td><td>${selected.total}</td><td>0</td></tr></tbody></table></div>
+      <p>${selected.changed} newly meet modeled criteria; ${selected.statusChanged} change aggregate classification. A renal change can leave another exclusion active or reveal an indeterminate result.</p>
+      ${changedRecords.length ? `<div class="report-table-wrap"><table><caption class="sr-only">Every changed record and responsible rule</caption><thead><tr><th scope="col">Record</th><th scope="col">Original → selected</th><th scope="col">Responsible rule / evidence</th></tr></thead><tbody>${changedRecords.map(record => `<tr><th scope="row">${escape(record.id)}</th><td>${escape(statusLabels[record.originalStatus])} → ${escape(statusLabels[record.status])}</td><td>${record.changes.map(change => `${escape(change.ruleId)} · ${change.sourceIds.map(escape).join(', ')}`).join('; ')}</td></tr>`).join('')}</tbody></table></div>` : '<p>No record changes classification under the active rules.</p>'}
+      <h5 class="report-ranking-title">Ranked newly matching records</h5><p>Ascending illustrative review-attention index; equal values use patient ID. Only newly matching records with complete review inputs are ranked. This unvalidated fixture index is not a probability of toxicity, a validated medical risk model, or enrollment approval.</p>
+      ${ranked.length ? `<div class="report-table-wrap"><table><caption class="sr-only">Ranked newly matching synthetic patients</caption><thead><tr><th scope="col">Rank</th><th scope="col">Patient</th><th scope="col">Illustrative index</th><th scope="col">Fictional supporting evidence</th></tr></thead><tbody>${ranked.map(record => `<tr><th scope="row">${record.rank}</th><td>${escape(record.id)}</td><td>${record.review.score} / 100 points</td><td>${[...new Set(record.changes.flatMap(change => change.sourceIds))].map(escape).join(', ')}</td></tr>`).join('')}</tbody></table></div>` : '<p>No records qualify for ranking under the active scenario.</p>'}
+    </section>
+    ${selectedRecord ? `<section><h4>04 <span>Inspected record · ${escape(selectedRecord.id)}</span></h4><p>${escape(selectedRecord.note)} ${escape(selectedRecord.reasons.join(' '))}</p><p><strong>Illustrative review-attention index:</strong> ${selectedProfile.score === null ? `Unranked. ${escape(selectedProfile.unrankedReason)}` : `${selectedProfile.score} / 100 points · ${escape(selectedProfile.scoreName)} v${escape(selectedProfile.scoreVersion)}`}. ${escape(selectedProfile.disclaimer)}</p>
+      <div class="report-table-wrap"><table><caption class="sr-only">Multidimensional clinical factor profile</caption><thead><tr><th scope="col">Profile dimension</th><th scope="col">Observed context</th><th scope="col">Profile state</th><th scope="col">Index points</th></tr></thead><tbody>${selectedProfile.dimensions.map(dimension => `<tr><th scope="row">${escape(dimension.label)}</th><td>${escape(dimension.value)}${dimension.unit ? ` ${escape(dimension.unit)}` : ''}</td><td>${escape(dimension.result)}</td><td>${dimension.points === null ? 'Not scored' : dimension.points}</td></tr>`).join('')}</tbody></table></div>
+      ${selectedProfile.score !== null ? `<p><strong>Index calculation:</strong> ${selectedProfile.components.map(component => `${escape(component.label)} +${component.points}`).join('; ')}. Raw total ${selectedProfile.rawScore}; capped index ${selectedProfile.score} / 100. These coefficients are arbitrary demonstration values.</p>` : ''}
+      <h5>Further review before inclusion could be considered</h5><ul>${selectedProfile.nextSteps.map(step => `<li><strong>${escape(step.title)}.</strong> ${escape(step.detail)}${step.sourceIds.length ? ` References: ${step.sourceIds.map(escape).join(', ')}.` : ''}</li>`).join('')}</ul><div class="report-table-wrap"><table class="report-audit-table"><caption class="sr-only">Criterion-level audit for inspected record</caption><thead><tr><th scope="col">Criterion</th><th scope="col">Original</th><th scope="col">Selected</th><th scope="col">Active rule & reason</th></tr></thead><tbody>${selectedRecord.evaluations.map(result => `<tr><th scope="row">${escape(result.title)}</th><td>${escape(result.originalResult)}</td><td>${escape(result.result)}</td><td>${escape(result.ruleId)} · v${escape(result.ruleVersion)}<br> ${escape(result.reason)}</td></tr>`).join('')}</tbody></table></div></section>` : ''}
+    <section><h4>${selectedRecord ? '05' : '04'} <span>Source register</span></h4>${sources.map((source, index) => `<div class="report-source"><span class="mono">[${index + 1}]</span><div><strong>${escape(source.id)} · ${escape(source.title)}</strong><p>${escape(source.type)} · ${escape(source.section)}${source.date ? ` · ${escape(source.date)}` : ''}</p>${source.url ? `<a href="${escape(source.url)}" target="_blank" rel="noopener noreferrer">View official source ${icon('external')}</a>` : ''}</div></div>`).join('')}</section>
+    <section class="report-assumptions"><h4>${selectedRecord ? '06' : '05'} <span>Demonstration assumptions</span></h4><ul>${study.assumptions.map(item => `<li>${escape(item)}</li>`).join('')}</ul></section>
+    <footer class="report-footer"><span>${escape(product.name)} · ${escape(study.id)}</span><span>Synthetic records · fictional evidence · no enrollment approval</span></footer>
+  </article>`;
+}
+
+  return tool === 'protocol' ? protocolPage() : tool === 'criteria' ? reviewPage() : tool === 'population' ? populationPage() : reportPage();
+}

@@ -30,7 +30,7 @@ function boundaryFor(record, lower, upper, unit, minimum) {
   return 'above';
 }
 
-export function renderPopulation({ state, patients, baseline, selected, config, criteria, sources, escape, icon, sourceButton }) {
+export function renderPopulation({ state, patients, baseline, selected, config, criteria, sources, escape, icon, sourceButton, linkedIds = null }) {
   const gate = selected.gate || {};
   const lower = config.thresholds.renalProposedMin;
   const upper = config.thresholds.renalOriginalMin;
@@ -42,9 +42,10 @@ export function renderPopulation({ state, patients, baseline, selected, config, 
   const active = Boolean(gate.active);
   const scenarios = config.scenarios;
   const scenario = scenarios.find((item) => item.id === state.scenario) || scenarios[0];
+  const linked = linkedIds === null ? null : new Set(linkedIds);
   const visible = current.records.filter((record) => {
     const matchesStatus = state.filter === 'new' ? record.changed : state.filter === 'excluded' ? record.status === 'excluded' : state.filter === 'indeterminate' ? record.status === 'indeterminate' : true;
-    return matchesStatus && (state.boundary === 'all' || boundary(record) === state.boundary);
+    return matchesStatus && (state.boundary === 'all' || boundary(record) === state.boundary) && (!linked || linked.has(record.id));
   });
   const record = selected.records.find((item) => item.id === state.record);
   const status = (value) => `<span class="engine-status ${value}">${icon(value === 'eligible' ? 'check' : value === 'excluded' ? 'close' : 'info')} ${labels[value] || labels.indeterminate}</span>`;
