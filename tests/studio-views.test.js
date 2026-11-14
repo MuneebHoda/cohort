@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createWorkspace, visibleRecords, evaluateDraft } from '../src/workspace.js';
+import { createWorkspace as createSharedWorkspace, visibleRecords, evaluateDraft } from '../src/workspace.js';
 import { anchorPatients } from '../src/patients.js';
 import { buildReviewPacket, renderReport, renderTrialSummary, renderTrialAnalytics, renderDecision } from '../src/studio-views.js';
+
+const createWorkspace = () => createSharedWorkspace({ dataset: 'casebook' });
 
 const text = html => html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 const tables = html => [...html.matchAll(/<table\b[^>]*>([\s\S]*?)<\/table>/g)].map(([, table]) => [...table.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/g)].map(([, row]) => [...row.matchAll(/<t[hd]\b[^>]*>([\s\S]*?)<\/t[hd]>/g)].map(([, cell]) => text(cell))));
@@ -135,10 +137,9 @@ test('missing demographic data is disclosed without inserting population statist
   const workspace = createWorkspace();
   workspace.setScenario('renal-revision');
   const analytics = renderTrialAnalytics(workspace.run, workspace.state);
-  assert.match(analytics, /Sex, race and ethnicity/);
-  assert.match(analytics, /Sites and geographic reach/);
-  assert.match(analytics, /Compatible reference population/);
-  assert.equal((analytics.match(/<strong>Not supplied<\/strong>/g) || []).length, 4);
+  assert.match(analytics, /reference case has no supplied sex, gender, race, ethnicity or site metadata/);
+  assert.match(analytics, /No compatible reference population/);
+  for (const dimension of workspace.run.demographics) { assert.equal(dimension.groups.find(group => group.id === 'not_collected').screened, 20); assert.equal(dimension.groups.filter(group => !group.missing).reduce((sum, group) => sum + group.screened, 0), 0); }
   const packet = buildReviewPacket(workspace);
   assert.ok(packet.analysis.patients.every(record => !Object.hasOwn(record, 'sex') && !Object.hasOwn(record, 'race') && !Object.hasOwn(record, 'site')));
   assert.ok(packet.analysis.ranked.every(record => record.review.components.every(component => !/sex|race|ethnicity|geography/i.test(component.id))));

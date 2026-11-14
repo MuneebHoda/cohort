@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createWorkspace, visibleRecords, validateProfile, evaluateDraft } from '../src/workspace.js';
+import { createWorkspace as createSharedWorkspace, visibleRecords, validateProfile, evaluateDraft } from '../src/workspace.js';
 import { anchorPatients } from '../src/patients.js';
+import { evaluateCohort } from '../src/cohort.js';
+import { generateShowcase } from '../src/synthetic-cohort.js';
+
+const createWorkspace = () => createSharedWorkspace({ dataset: 'casebook' });
 
 const counts = cohort => [cohort.eligible, cohort.excluded, cohort.indeterminate];
 const ids = records => records.map(record => record.id);
@@ -218,9 +222,9 @@ test('expanded dataset switching preserves the shared selection and each working
   const workingVersion = workspace.state.datasetVersion;
   workspace.selectPatient('P06');
   workspace.setDataset('expanded');
-  assert.equal(workspace.run.patients.length, 120);
-  assert.equal(workspace.state.selectedPatientId, 'P06');
-  assert.deepEqual(counts(workspace.run.original), [22, 88, 10]);
+  assert.equal(workspace.run.patients.length, 500);
+  assert.ok(workspace.state.selectedPatientId.startsWith('SYN-'));
+  assert.deepEqual(counts(workspace.run.original), counts(evaluateCohort(generateShowcase(), false)));
   workspace.setDataset('casebook');
   assert.equal(workspace.run.patients.length, 21);
   assert.equal(workspace.state.datasetVersion, workingVersion);
@@ -239,7 +243,7 @@ test('reset restores the original twenty records while retaining session history
   assert.deepEqual(counts(workspace.run.current), [4, 15, 1]);
   assert.equal(workspace.state.selectedPatientId, 'P03');
   assert.equal(workspace.state.datasetVersion, 'casebook-v1');
-  assert.deepEqual(workspace.state.filters, { status: 'all', age: 'all', subgroup: 'all', query: '' });
+  assert.deepEqual(workspace.state.filters, { status: 'all', age: 'all', subgroup: 'all', query: '', demographic: 'all' });
   assert.equal(workspace.events.length, beforeEvents + 1);
   assert.equal(workspace.events.at(-1).type, 'reset');
   workspace.addProfile(completeDraft({ id: 'DIFFERENT21' }));

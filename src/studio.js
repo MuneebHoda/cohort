@@ -1,7 +1,9 @@
 import { product, study, sources, clinicalConfig } from './data.js';
 import { demoCase } from './clinical-fixture.js';
 import { getReviewProfile } from './ranking.js';
-import { createWorkspace, visibleRecords, evaluateDraft } from './workspace.js';
+import { createWorkspace, visibleRecords, evaluateDraft, datasetDefinitions } from './workspace.js';
+import { transitionPanel } from './motion.js';
+import { renderAssumptions } from './inspection.js';
 import { renderPatientQueue, renderPatientDetail, renderProfileForm } from './studio-patient.js';
 import { createConstellation } from './constellation.js';
 import { renderContext, renderSceneStory, renderTrialSummary, renderTrialAnalytics, renderDecision, renderReport, buildReviewPacket } from './studio-views.js';
@@ -32,7 +34,8 @@ export function mountStudio() {
   const toolState = { populationView: 'proposed', boundary: 'all' };
   document.body.classList.add('studio-body');
   document.title = 'Cohort — Live Trial Review Studio';
-  app.innerHTML = `<header class="studio-header"><a class="studio-brand" href="#patient" aria-label="Cohort patient review"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="16" cy="15" r="8"/><circle cx="25" cy="15" r="8"/><circle cx="20.5" cy="23" r="8"/></svg><span>${e(product.wordmark)}</span></a><div class="studio-study"><span>CLINICAL DEVELOPMENT / ${e(study.phase).toUpperCase()}</span><h1>${e(study.drug)} <span>${e(study.title.replace(study.drug, '').trim())}</span></h1></div><span class="synthetic-pill">${icon('flask')} Synthetic demonstration</span><div class="studio-header-actions"><button class="studio-icon-button" data-action="guide" aria-label="Open demonstration guide" title="Demonstration guide">${icon('book')}</button><button class="studio-reset" data-action="reset">${icon('reset')}<span>Reset demo</span></button></div></header>
+  document.querySelector('meta[name="theme-color"]').content = getComputedStyle(document.documentElement).getPropertyValue('--app-background').trim();
+  app.innerHTML = `<header class="studio-header"><a class="studio-brand" href="#patient" aria-label="Cohort patient review"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="16" cy="15" r="8"/><circle cx="25" cy="15" r="8"/><circle cx="20.5" cy="23" r="8"/></svg><span>${e(product.wordmark)}</span></a><div class="studio-study"><span>CLINICAL DEVELOPMENT / ${e(study.phase).toUpperCase()}</span><h1>${e(study.drug)} <span>${e(study.title.replace(study.drug, '').trim())}</span></h1></div><span class="synthetic-pill">${icon('flask')} Synthetic demonstration</span><div class="studio-header-actions"><button class="studio-icon-button" data-action="guide" aria-label="Open demonstration guide" title="Demonstration guide">${icon('book')}</button><button class="studio-reset" data-action="reset">${icon('reset')}<span>Reset dataset</span></button></div></header>
     <div class="studio-navigation"><nav aria-label="Workspace perspectives" id="perspective-tabs"></nav><div id="scenario-controls"></div><details class="study-tools-menu"><summary>${icon('file')}<span>Study tools</span>${icon('chevron')}</summary><div><button data-tool="protocol">Study protocol</button><button data-tool="criteria">Criterion review desk</button><button data-tool="population">Boundary explorer</button><button data-action="report">Current review packet</button><button data-action="guide">Demonstration guide</button></div></details></div>
     <div id="workspace-context" class="workspace-context"></div>
     <main id="main" tabindex="-1" class="studio-main"><section id="patient-perspective" aria-label="Patient Review"><div class="patient-studio-layout"><aside id="patient-queue" class="patient-queue-region"></aside><div class="population-stage-column"><div id="patient-scene-slot"></div><section id="scene-story" class="scene-story"></section><div class="stage-reading-note">${icon('shield')} Explicit rules. Traceable evidence. Expert review required.</div></div><div class="patient-detail-region"><button class="mobile-back" data-action="back-to-queue">← Back to patient queue</button><div id="patient-detail"></div></div></div></section>
@@ -87,10 +90,7 @@ export function mountStudio() {
     }
     [...region.querySelectorAll('details')].forEach((el, i) => { if (openDetails.includes(i)) el.open = true; });
     restoreFocus(region, key, selection);
-    if (animate && !motion.matches && region.animate) {
-      region.getAnimations().forEach(animation => animation.cancel());
-      region.animate([{ opacity: .45, transform: 'translateY(4px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 200, easing: 'cubic-bezier(.2,.7,.3,1)' });
-    }
+    if (animate) transitionPanel(region);
   }
 
   function render() {
@@ -119,13 +119,26 @@ export function mountStudio() {
     patch('decision-content', renderDecision(workspace, traceStep, traceCriterion));
     const dispositionDraft = dispositionDrafts.get(`${run.id}/${state.selectedPatientId}`);
     if (dispositionDraft) {
-      document.querySelector('#disposition-reason').value = dispositionDraft.reason;
-      document.querySelector('#disposition').value = dispositionDraft.disposition;
+      for (const form of document.querySelectorAll('[data-review-form]')) {
+        form.querySelector('[name="reason"]').value = dispositionDraft.reason;
+        form.querySelector('[name="disposition"]').value = dispositionDraft.disposition;
+      }
     }
     const destination = document.getElementById(state.perspective === 'trial' ? 'trial-scene-slot' : 'patient-scene-slot');
     if (sceneHost.parentElement !== destination) destination.append(sceneHost);
     scene.setVisible(state.perspective !== 'decision' && !(mobileDetailOpen && matchMedia('(max-width: 900px)').matches));
     scene.update({ run, selectedPatientId: state.selectedPatientId, visibleIds: visibleRecords(run, state.filters).map(r => r.id), reducedMotion: motion.matches });
+    if (patientChanged && state.perspective === 'patient' && !mobileDetailOpen) requestAnimationFrame(() => {
+      if (workspace.state.selectedPatientId !== state.selectedPatientId) return;
+      const queue = document.querySelector('.sp-queue-scroll');
+      const row = [...document.querySelectorAll('[data-patient-row]')].find(item => item.dataset.patientRow === state.selectedPatientId);
+      if (queue && row && queue.scrollHeight > queue.clientHeight) {
+        const bounds = queue.getBoundingClientRect(), position = row.getBoundingClientRect();
+        const top = queue.querySelector('thead').getBoundingClientRect().bottom + 6;
+        if (position.top < top) queue.scrollTop += position.top - top;
+        else if (position.bottom > bounds.bottom - 6) queue.scrollTop += position.bottom - bounds.bottom + 6;
+      }
+    });
     if (toolDialog.open && tool !== 'guide') renderTool();
     previousPatient = state.selectedPatientId;
     previousDetailTab = state.detailTab;
@@ -142,11 +155,20 @@ export function mountStudio() {
   }
 
   function navigate(perspective, updateUrl = true) {
+    const changed = workspace.state.perspective !== perspective;
     mobileDetailOpen = false;
     workspace.setPerspective(perspective);
     render();
     if (updateUrl && location.hash !== `#${perspective}`) history.pushState({}, '', `#${perspective}`);
     document.getElementById('main').focus({ preventScroll: true });
+    if (changed) transitionPanel(document.getElementById(`${perspective}-perspective`));
+  }
+
+  function changeDataset(id) {
+    if (id === workspace.state.dataset) return;
+    mobileDetailOpen = false;
+    workspace.setDataset(id);
+    announce(`${workspace.events.at(-1).reason} ${workspace.run.current.total} loaded records; ${workspace.run.id}.`);
   }
 
   function changeScenario(id) {
@@ -163,9 +185,9 @@ export function mountStudio() {
   }
 
   function renderTool() {
-    const label = { protocol: 'Study protocol', criteria: 'Criterion review desk', population: 'Boundary explorer', report: 'Current review packet' }[tool] || 'Demonstration guide';
+    const label = { protocol: 'Study protocol', criteria: 'Criterion review desk', population: 'Boundary explorer', report: 'Current review packet', assumptions: 'Dataset assumptions & provenance' }[tool] || 'Demonstration guide';
     const actions = tool === 'report' ? `<button class="studio-button" data-action="export">${icon('download')} Export JSON</button><button class="studio-button primary" data-action="print">${icon('print')} Print / PDF</button>` : '';
-    patch(toolDialog, `${toolHeader(label, actions)}<div class="tool-content">${tool === 'report' ? renderReport(workspace) : renderStudyTool(tool, { state: { ...workspace.state, ...toolState, criterion: toolCriterion }, run: workspace.run })}</div>`);
+    patch(toolDialog, `${toolHeader(label, actions)}<div class="tool-content">${tool === 'report' ? renderReport(workspace) : tool === 'assumptions' ? renderAssumptions(workspace.run) : renderStudyTool(tool, { state: { ...workspace.state, ...toolState, criterion: toolCriterion }, run: workspace.run })}</div>`);
   }
 
   function showTool(name) {
@@ -173,6 +195,7 @@ export function mountStudio() {
     document.querySelector('.study-tools-menu').open = false;
     renderTool();
     if (!toolDialog.open) toolDialog.showModal();
+    transitionPanel(toolDialog);
   }
 
   function openEvidence(id) {
@@ -182,13 +205,14 @@ export function mountStudio() {
     const registered = clinicalConfig.evidence.find(s => s.id === id);
     const official = source.type === 'Official guidance';
     const synthetic = source.type === 'Synthetic patient data';
-    evidenceDialog.innerHTML = `<div class="drawer-header"><span class="studio-eyebrow">EVIDENCE / ${official ? 'GUIDANCE CONTEXT' : synthetic ? 'DATASET PROVENANCE' : 'FICTIONAL DRUG EVIDENCE'}</span><button class="studio-icon-button" data-action="close-evidence" aria-label="Close evidence">${icon('close')}</button></div><div class="drawer-content"><span class="source-type ${official ? 'official' : ''}">${icon(official ? 'book' : 'flask')}${e(source.type)}</span><h2 id="evidence-title">${e(source.title)}</h2><dl class="source-provenance"><div><dt>Source ID</dt><dd>${e(id)}</dd></div><div><dt>Document date</dt><dd>${e(registered?.date || 'Not supplied')}</dd></div><div><dt>Document version</dt><dd>${e(registered?.version || 'Not supplied')}</dd></div><div><dt>Fixture container</dt><dd>SYN-217 case v${e(demoCase.case_version)} · ${e(workspace.run.id)}</dd></div><div><dt>Passage reference</dt><dd>${e(id)} / ${official ? 'source registry summary' : synthetic ? 'dataset notes' : 'fictional summary'}<small>No original document passage identifier supplied.</small></dd></div></dl><span class="studio-eyebrow passage-label">${official ? 'REGISTRY SUMMARY · PARAPHRASE, NOT A QUOTATION' : synthetic ? 'SYNTHETIC DATASET NOTES' : 'AUTHORED FICTIONAL SUMMARY'}</span><blockquote>${e(official ? registered?.use || registered?.summary || 'A source excerpt was not supplied.' : registered?.passage || registered?.summary || source.passage || 'A source excerpt was not supplied.')}</blockquote><section class="evidence-relationship"><h3>Relationship to this finding</h3><p>${e(source.relationship)}</p></section><div class="source-applicability"><strong>${official ? 'Context does not establish SYN-217 safety.' : synthetic ? 'Synthetic provenance, not a real patient cohort.' : 'Applicability requires qualified review.'}</strong><p>${official ? 'This prototype includes a registry description, not a verified verbatim excerpt. Check the original source and its current status before making regulatory claims.' : id.startsWith('SYN-PK') ? `The fictional renal packet covers a stable eGFR ${e(clinicalConfig.thresholds.renalProposedMin)}–<${e(clinicalConfig.thresholds.renalOriginalMin)} subgroup. Baseline records have no longitudinal renal series; their stability flag is a synthetic adapter assumption. No supplied evidence supports extension below ${e(clinicalConfig.thresholds.renalProposedMin)}.` : 'The supplied summary is fictional and cannot establish safety or enrollment approval for a real patient.'}</p></div>${source.note ? `<p class="source-note">${e(source.note)}</p>` : ''}${source.url ? `<a class="studio-button full" href="${e(source.url)}" target="_blank" rel="noopener noreferrer">Read official source ${icon('external')}</a>` : '<p class="fixture-disclosure">Prepared fictional content for this software demonstration.</p>'}</div><div class="drawer-footer">${icon('shield')} Evidence applicability and modeled rule matching are separate.</div>`;
+    evidenceDialog.innerHTML = `<div class="drawer-header"><span class="studio-eyebrow">EVIDENCE / ${official ? 'GUIDANCE CONTEXT' : synthetic ? 'DATASET PROVENANCE' : 'FICTIONAL DRUG EVIDENCE'}</span><button class="studio-icon-button" data-action="close-evidence" aria-label="Close evidence">${icon('close')}</button></div><div class="drawer-content"><span class="source-type ${official ? 'official' : ''}">${icon(official ? 'book' : 'flask')}${e(source.type)}</span><h2 id="evidence-title">${e(source.title)}</h2><dl class="source-provenance"><div><dt>Source ID</dt><dd>${e(id)}</dd></div><div><dt>Document date</dt><dd>${e(registered?.date || 'Not supplied')}</dd></div><div><dt>Document version</dt><dd>${e(registered?.version || 'Not supplied')}</dd></div><div><dt>Fixture container</dt><dd>SYN-217 case v${e(demoCase.case_version)} · ${e(workspace.run.id)}</dd></div><div><dt>Passage reference</dt><dd>${e(id)} / ${official ? 'source registry summary' : synthetic ? 'dataset notes' : 'fictional summary'}<small>No original document passage identifier supplied.</small></dd></div></dl><span class="studio-eyebrow passage-label">${official ? 'REGISTRY SUMMARY · PARAPHRASE, NOT A QUOTATION' : synthetic ? 'SYNTHETIC DATASET NOTES' : 'AUTHORED FICTIONAL SUMMARY'}</span><blockquote>${e(official ? registered?.use || registered?.summary || 'A source excerpt was not supplied.' : registered?.passage || registered?.summary || source.passage || 'A source excerpt was not supplied.')}</blockquote><section class="evidence-relationship"><h3>Relationship to this finding</h3><p>${e(source.relationship)}</p></section><div class="source-applicability"><strong>${official ? 'Context does not establish SYN-217 safety.' : synthetic ? 'Synthetic provenance, not a real patient cohort.' : 'Applicability requires qualified review.'}</strong><p>${official ? 'This prototype includes a registry description, not a verified verbatim excerpt. Check the original source and its current status before making regulatory claims.' : id.startsWith('SYN-PK') ? `The fictional renal packet covers a stable eGFR ${e(clinicalConfig.thresholds.renalProposedMin)}–<${e(clinicalConfig.thresholds.renalOriginalMin)} subgroup. ${workspace.state.dataset === 'casebook' ? 'The 20-record reference case has no longitudinal renal series; its stability flag is a synthetic adapter assumption.' : 'Generated and draft renal-stability flags are authored synthetic values. A single dated measurement does not establish longitudinal stability.'} No supplied evidence supports extension below ${e(clinicalConfig.thresholds.renalProposedMin)}.` : 'The supplied summary is fictional and cannot establish safety or enrollment approval for a real patient.'}</p></div>${source.note ? `<p class="source-note">${e(source.note)}</p>` : ''}${source.url ? `<a class="studio-button full" href="${e(source.url)}" target="_blank" rel="noopener noreferrer">Read official source ${icon('external')}</a>` : '<p class="fixture-disclosure">Prepared fictional content for this software demonstration.</p>'}</div><div class="drawer-footer">${icon('shield')} Evidence applicability and modeled rule matching are separate.</div>`;
     if (!evidenceDialog.open) evidenceDialog.showModal();
+    transitionPanel(evidenceDialog, 'drawer');
   }
 
   function renderScratch(feedbackOnly = false) {
     const errors = draftEvaluation?.errors || {};
-    const html = renderProfileForm({ draft: profileDraft, evaluation: draftEvaluation, errors, escape: e, icon });
+    const html = renderProfileForm({ draft: profileDraft, evaluation: draftEvaluation, errors, datasetLabel: `${workspace.run.dataset.shortLabel} · ${workspace.run.current.total} loaded records`, escape: e, icon });
     if (!feedbackOnly) { renderedHtml.delete(profileDialog); patch(profileDialog, html); return; }
     // Keep the live form mounted: replacing a focused form on blur can cause a native navigation.
     const template = document.createElement('template');
@@ -226,6 +250,7 @@ export function mountStudio() {
     }
     renderScratch();
     profileDialog.showModal();
+    transitionPanel(profileDialog);
   }
 
   function showGuide() {
@@ -235,7 +260,7 @@ export function mountStudio() {
     const example = workspace.run.proposed.records.find(record => record.id === 'P03');
     const exampleProfile = example ? getReviewProfile(example) : null;
     const exampleSum = exampleProfile?.components?.filter(component => component.points).map(component => component.points).join(' + ');
-    toolDialog.innerHTML = `${toolHeader('A three-minute demonstration')}<div class="tool-content demo-guide"><p>One synthetic case. One analysis. Three perspectives.</p><ol><li><strong>Start with the individual.</strong><p>Select P03 and inspect the original renal exclusion. ${exampleProfile?.score !== null && exampleProfile?.score !== undefined ? `Its proposed index is ${exampleSum} = ${exampleProfile.score}, an illustrative attention measure.` : 'Its proposed index is available only when the configured eligibility and scoring requirements are met.'}</p><button data-guide="patient">Open P03 ${icon('arrow')}</button></li><li><strong>Follow the evidence.</strong><p>Read the fictional renal PK summary and the missing stability-evidence limitation.</p><button data-source="SYN-PK-02">Inspect the fictional source ${icon('arrow')}</button></li><li><strong>Compare the proposed scenario.</strong><p>Apply the configured rule and watch the calculated patient groups change.</p><button data-guide="scenario">Apply proposed demonstration rule ${icon('arrow')}</button></li><li><strong>Keep restrictions visible.</strong><p>P06 remains excluded by its medication restriction. P16 becomes indeterminate because hepatic information is missing.</p><button data-guide="restriction">Inspect P06 ${icon('arrow')}</button></li><li><strong>Inspect population composition.</strong><p>Compare explicit denominators and click a linked age group.</p><button data-guide="trial">Open Trial Strategy ${icon('arrow')}</button></li><li><strong>Review the trail.</strong><p>Trace actual sources and rule outcomes, record a demonstration disposition, then export the current packet.</p><button data-guide="decision">Open Decision Review ${icon('arrow')}</button></li></ol></div>`;
+    toolDialog.innerHTML = `${toolHeader('A three-minute demonstration')}<div class="tool-content demo-guide"><p>Reference-case walkthrough. Starting a step switches to the unchanged 20-record reference dataset.</p><ol><li><strong>Start with the individual.</strong><p>Select P03 and inspect the original renal exclusion. ${exampleProfile?.score !== null && exampleProfile?.score !== undefined ? `Its proposed index is ${exampleSum} = ${exampleProfile.score}, an illustrative attention measure.` : 'Its proposed index is available only when the configured eligibility and scoring requirements are met.'}</p><button data-guide="patient">Open P03 in the reference case ${icon('arrow')}</button></li><li><strong>Follow the evidence.</strong><p>Read the fictional renal PK summary and the missing stability-evidence limitation.</p><button data-source="SYN-PK-02">Inspect the fictional source ${icon('arrow')}</button></li><li><strong>Compare the proposed scenario.</strong><p>Apply the configured rule and watch the calculated patient groups change.</p><button data-guide="scenario">Apply proposed demonstration rule ${icon('arrow')}</button></li><li><strong>Keep restrictions visible.</strong><p>P06 remains excluded by its medication restriction. P16 becomes indeterminate because hepatic information is missing.</p><button data-guide="restriction">Inspect P06 ${icon('arrow')}</button></li><li><strong>Inspect population composition.</strong><p>Compare explicit denominators and click a linked age group.</p><button data-guide="trial">Open Trial Strategy ${icon('arrow')}</button></li><li><strong>Review the trail.</strong><p>Trace actual sources and rule outcomes, record a demonstration disposition, then export the current packet.</p><button data-guide="decision">Open Decision Review ${icon('arrow')}</button></li></ol></div>`;
     toolDialog.showModal();
   }
 
@@ -252,10 +277,15 @@ export function mountStudio() {
       if (button.dataset.source) { openEvidence(button.dataset.source); return; }
       if (button.dataset.perspective) { if (toolDialog.open) toolDialog.close(); navigate(button.dataset.perspective); return; }
       if (button.dataset.scenario) { changeScenario(button.dataset.scenario); return; }
+      if (button.dataset.inspectStatus) { workspace.setFilters({ status: button.dataset.inspectStatus, age: 'all', subgroup: 'all', query: '', demographic: 'all' }); const records = visibleRecords(workspace.run, workspace.state.filters); if (records.length) workspace.selectPatient(records[0].id); navigate('patient'); announce('Opened whole-cohort records; other filters cleared.'); return; }
+      if (button.dataset.queuePage !== undefined) { workspace.setQueuePage(Number(button.dataset.queuePage)); document.querySelector('.sp-queue-scroll')?.scrollTo({ top: 0 }); document.querySelector('.sp-queue-pagination button:not(:disabled)')?.focus({ preventScroll: true }); return; }
+      if (button.dataset.composition) { workspace.setCompositionDimension(button.dataset.composition); transitionPanel(document.querySelector('.composition-rows')); return; }
+      if (button.dataset.demographic) { workspace.setFilters({ demographic: workspace.state.filters.demographic === button.dataset.demographic ? 'all' : button.dataset.demographic }); return; }
+      if (button.dataset.clearFilter) { workspace.setFilters({ [button.dataset.clearFilter]: button.dataset.clearFilter === 'query' ? '' : 'all' }); return; }
       if (button.dataset.view) { toolState.populationView = button.dataset.view; renderTool(); return; }
       if (button.dataset.boundary) { toolState.boundary = button.dataset.boundary; renderTool(); return; }
       if (button.dataset.filter) { workspace.setFilters({ status: button.dataset.filter }); return; }
-      if (button.dataset.dataset) { workspace.setDataset(button.dataset.dataset); return; }
+      if (button.dataset.dataset) { changeDataset(button.dataset.dataset); return; }
       if (button.dataset.reviewMode) { if (button.dataset.reviewMode === 'ranked') { toolDialog.close(); navigate('patient'); } return; }
       if (button.dataset.patient || button.dataset.record) { selectPatient(button.dataset.patient || button.dataset.record); return; }
       if (button.dataset.status) { workspace.setFilters({ status: button.dataset.status }); return; }
@@ -278,6 +308,7 @@ export function mountStudio() {
       if (button.dataset.stage) { const stage = button.dataset.stage; if (stage === 'population') { toolDialog.close(); navigate('patient'); } else showTool(stage === 'review' ? 'criteria' : stage); return; }
       if (button.dataset.guide) {
         const step = button.dataset.guide; toolDialog.close();
+        if (workspace.state.dataset !== 'casebook') changeDataset('casebook');
         if (step === 'scenario') { changeScenario('renal-revision'); navigate('patient'); }
         else if (step === 'trial') navigate('trial');
         else if (step === 'decision') { workspace.selectPatient('P16'); navigate('decision'); }
@@ -285,8 +316,10 @@ export function mountStudio() {
         return;
       }
       const action = button.dataset.action;
-      if (action === 'clear-filters') workspace.setFilters({ status: 'all', age: 'all', subgroup: 'all', query: '' });
-      if (action === 'dataset') workspace.setDataset(workspace.state.dataset === 'casebook' ? 'expanded' : 'casebook');
+      if (action === 'clear-filters') workspace.setFilters({ status: 'all', age: 'all', subgroup: 'all', query: '', demographic: 'all' });
+      if (action === 'dataset') changeDataset(workspace.state.dataset === 'casebook' ? 'expanded' : 'casebook');
+      if (action === 'assumptions') showTool('assumptions');
+      if (action === 'inspect-filtered') { const records = visibleRecords(workspace.run, workspace.state.filters); if (records.length && !records.some(record => record.id === workspace.state.selectedPatientId)) workspace.selectPatient(records[0].id); navigate('patient'); }
       if (action === 'profile') showProfile();
       if (action === 'close-profile') profileDialog.close();
       if (action === 'close-tool') toolDialog.close();
@@ -303,7 +336,7 @@ export function mountStudio() {
       if (action === 'reset') {
         clearTimeout(profileTimer); profileDraft = {}; draftEvaluation = null; mobileDetailOpen = false;
         for (const dialog of [evidenceDialog, toolDialog, profileDialog]) if (dialog.open) dialog.close();
-        workspace.reset(); history.replaceState({}, '', '#patient'); announce('Baseline restored: 20 synthetic records and original protocol. Session history retained.');
+        workspace.reset(); history.replaceState({}, '', `#${workspace.state.perspective}`); announce(`Restored ${datasetDefinitions[workspace.state.dataset].shortLabel}: ${workspace.run.current.total} synthetic records and original protocol. Session history retained.`);
       }
       if (action === 'include-renal') changeScenario(workspace.state.scenarioId === 'renal-revision' ? 'original' : 'renal-revision');
       if (action === 'revision') changeScenario(workspace.state.scenarioId === 'original' ? 'renal-revision' : 'original');
@@ -331,26 +364,29 @@ export function mountStudio() {
 
   document.addEventListener('input', event => {
     if (event.target.matches('[data-filter-query]')) workspace.setFilters({ query: event.target.value });
-    if (event.target.closest('#profile-form')) { captureDraft(); clearTimeout(profileTimer); profileTimer = setTimeout(evaluateScratch, 240); }
-    if (event.target.closest('#disposition-form')) dispositionDrafts.set(`${workspace.run.id}/${workspace.state.selectedPatientId}`, Object.fromEntries(new FormData(event.target.closest('form'))));
+    if (event.target.closest('#profile-form')) { captureDraft(); clearTimeout(profileTimer); }
+    if (event.target.closest('[data-review-form]')) dispositionDrafts.set(`${workspace.run.id}/${workspace.state.selectedPatientId}`, Object.fromEntries(new FormData(event.target.closest('form'))));
+    if (event.target.matches('[data-review-form] [name="reason"]')) event.target.setCustomValidity('');
   });
   document.addEventListener('change', event => {
     if (event.target.id === 'scenario-options') changeScenario(event.target.value);
+    if (event.target.id === 'dataset-selector') changeDataset(event.target.value);
     if (event.target.id === 'trace-criterion') { traceCriterion = event.target.value; render(); }
     if (event.target.closest('#profile-form')) evaluateScratch();
-    if (event.target.closest('#disposition-form')) dispositionDrafts.set(`${workspace.run.id}/${workspace.state.selectedPatientId}`, Object.fromEntries(new FormData(event.target.closest('form'))));
+    if (event.target.closest('[data-review-form]')) dispositionDrafts.set(`${workspace.run.id}/${workspace.state.selectedPatientId}`, Object.fromEntries(new FormData(event.target.closest('form'))));
   });
   document.addEventListener('submit', event => {
     if (event.target.id === 'profile-form') { event.preventDefault(); evaluateScratch(); }
-    if (event.target.id === 'disposition-form') {
+    if (event.target.matches('[data-review-form]')) {
       event.preventDefault(); const data = new FormData(event.target);
+      if (!String(data.get('reason') || '').trim()) { const field = event.target.querySelector('[name="reason"]'); field.setCustomValidity('Enter a review finding or question.'); field.reportValidity(); return; }
       dispositionDrafts.delete(`${workspace.run.id}/${workspace.state.selectedPatientId}`);
       workspace.recordDisposition({ patientId: workspace.state.selectedPatientId, disposition: data.get('disposition'), reason: data.get('reason') });
       announce(`Demonstration disposition recorded for ${workspace.state.selectedPatientId}; eligibility is unchanged.`);
     }
   });
   document.addEventListener('keydown', event => {
-    if (event.target.matches('[data-detail-tab]') && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+    if (event.target.matches('[role="tab"][data-detail-tab]') && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
       const tabs = ['overview', 'criteria', 'evidence', 'pathway'];
       const index = tabs.indexOf(event.target.dataset.detailTab);
       const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;

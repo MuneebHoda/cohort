@@ -1,9 +1,11 @@
 import { clinicalConfig, demoCase } from './clinical-fixture.js';
-import { generateCohort, anchorPatients } from './patients.js';
+import { anchorPatients } from './patients.js';
+import { generateShowcase } from './synthetic-cohort.js';
+import { showcaseConfig } from './synthetic-config.js';
 
 // Editorial copy is separate from the executable rules in clinical-fixture.js.
 export const product = { name: 'Cohort', wordmark: 'cohort.', tagline: 'A clearer path to inclusion.' };
-export const patients = generateCohort(120, 217);
+export const patients = generateShowcase();
 export { anchorPatients, clinicalConfig };
 export const study = {
   id: demoCase.study.id,
@@ -15,7 +17,7 @@ export const study = {
   context: demoCase.study.study_scope,
   assumptions: [
     'SYN-217, its drug evidence, and every patient are fictional. This prototype applies explicit eligibility rules; it does not predict adverse events, establish safety, or approve enrollment.',
-    'The casebook preserves 20 supplied synthetic records. The expanded cohort includes those records plus 100 reproducible variations, using seed 217.',
+    `The reference case preserves ${anchorPatients.length} supplied records. The separate expanded cohort contains ${showcaseConfig.count} profile-based synthetic records using seed ${showcaseConfig.seed}, fixed as-of date ${showcaseConfig.asOfDate}, and generation configuration v${showcaseConfig.version}. Its distributions are showcase assumptions, not prevalence estimates.`,
     'Numeric thresholds come from the supplied SYN-217 exercise. They are synthetic software boundaries, not clinically validated safety cutoffs. Ehsan must review or replace them.',
     'The proposed renal rule preserves the original qualifying range and permits the lower demonstration range only when renal stability is explicitly recorded. Stability of the 20 anchor cases is an explicit synthetic scope assumption.',
     'Every active criterion is evaluated. A known failed criterion makes the overall record excluded; without a failure, any missing, invalid, or conflicting required observation makes it indeterminate. Unknown results remain visible even alongside a known exclusion.',
@@ -71,5 +73,5 @@ export const sources = [
     ...guidanceContext[source.id], relationship: `${source.use} General context only; not supporting evidence for the SYN-217 numerical rule.`,
     note: 'Nonbinding guidance. Passage is a paraphrase, not a quotation. Drug-specific evidence is fictional and remains separate.',
   })),
-  { id: 'synthetic-population', title: 'SYN-217 · Reproducible synthetic population', shortTitle: '20 anchor cases + 100 variations', type: 'Synthetic patient data', section: 'Generator v1 · Seed 217', passage: 'Twenty supplied anchor cases are preserved. A seeded generator adds 100 records with renal, hepatic, ECOG, cardiac, medication, comorbidity, and missing-data variation. All records are evaluated locally.', relationship: 'Explains rule behavior across clinical complexity; it does not estimate real recruitment or real-world safety.', note: 'No personal or real patient data. Every numerical boundary is a synthetic fixture requiring clinical review.' },
+  { id: 'synthetic-population', title: 'SYN-217 · Reproducible synthetic population', shortTitle: `Reference ${anchorPatients.length} / separate synthetic ${showcaseConfig.count}`, type: 'Synthetic patient data', section: `Generator v${showcaseConfig.version} · Seed ${showcaseConfig.seed} · As of ${showcaseConfig.asOfDate}`, passage: `The ${anchorPatients.length} supplied reference cases remain unchanged. A separate seeded generator authors ${showcaseConfig.count} coherent clinical profiles and explicitly synthetic demographics. Generation configuration v${showcaseConfig.version} uses seed ${showcaseConfig.seed} and fixed as-of date ${showcaseConfig.asOfDate}. Clinical values and demographic metadata use independent random streams. All eligibility results are evaluated locally.`, relationship: 'Explains rule behavior across clinical complexity; it does not estimate real recruitment or real-world safety.', note: 'No personal or real patient data. Every numerical boundary is a synthetic fixture requiring clinical review.' },
 ];

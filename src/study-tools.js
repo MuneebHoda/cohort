@@ -8,7 +8,7 @@ import { visibleRecords } from './workspace.js';
 export function renderStudyTool(tool, workspace) {
   const run = workspace.run;
   const context = workspace.state;
-  const state = { stage: tool, criterion: context.criterion || 'renal', revision: context.scenarioId !== 'original', populationView: context.populationView || 'proposed', record: context.selectedPatientId, scenario: context.scenarioId === 'original' ? 'renal-revision' : context.scenarioId, dataset: context.dataset, filter: context.filters.status === 'eligible' ? 'all' : context.filters.status, boundary: context.boundary || 'all', reviewMode: 'population', rankingGroup: context.filters.status };
+  const state = { stage: tool, criterion: context.criterion || 'renal', revision: context.scenarioId !== 'original', populationView: context.populationView || 'proposed', record: context.selectedPatientId, scenario: context.scenarioId === 'original' ? 'renal-revision' : context.scenarioId, dataset: context.dataset, filter: context.filters.status, boundary: context.boundary || 'all', reviewMode: 'population', rankingGroup: context.filters.status };
   const baseline = run.original;
   const potential = run.proposed;
   const currentPatients = () => run.patients;
@@ -29,6 +29,7 @@ function sourceButton(sourceId, compact = false) {
 }
 
 function miniDots() {
+  if (potential.total > 100) return `<div class="grouped-mini-summary"><p>Grouped overview · all ${potential.total} records</p><div>${[['eligible',potential.eligible],['excluded',potential.excluded],['indeterminate',potential.indeterminate]].map(([status,count]) => `<span class="${status}" style="flex:${count}" title="${status}: ${count}"></span>`).join('')}</div></div>`;
   return `<div class="mini-dots" aria-hidden="true">${potential.records.map((record) => `<span class="mini-dot ${record.status} ${record.changed ? 'changed' : ''}"></span>`).join('')}</div>`;
 }
 
