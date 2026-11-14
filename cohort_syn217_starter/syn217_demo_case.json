@@ -1,0 +1,2102 @@
+{
+  "case_version": "1.0.0",
+  "synthetic_only": true,
+  "disclaimer": "FICTIONAL SOFTWARE DEMONSTRATION. No real drug, study, patients or clinical safety evidence. Scores are unvalidated reviewer-attention heuristics, NOT predicted adverse-event risk or clinical enrollment decisions.",
+  "product": "Cohort — Evidence-Gated Eligibility Review",
+  "study": {
+    "id": "DEMO-SYN217-03",
+    "title": "SYN-217 Phase 3 Oncology Eligibility Review",
+    "fictional_drug": "SYN-217",
+    "fictional_drug_class": "Oral targeted small-molecule inhibitor with fictional CYP3A-dependent metabolism",
+    "indication": "Advanced non-small-cell lung cancer after prior systemic therapy",
+    "phase": 3,
+    "primary_goal": "Identify renal-impairment exclusion potentially eligible for review using fictitious drug-specific pharmacokinetic evidence",
+    "study_scope": "Every synthetic record is an adult assumed to meet cancer indication, prior-treatment and consent conditions; only the modeled criteria below are assessed."
+  },
+  "source_registry": [
+    {
+      "id": "FDA-2025-REP",
+      "type": "authentic_public_guidance",
+      "title": "Enhancing Participation in Clinical Trials — Eligibility Criteria, Enrollment Practices, and Trial Designs",
+      "date": "2025-12",
+      "status": "Final, nonbinding guidance",
+      "url": "https://www.fda.gov/regulatory-information/search-fda-guidance-documents/enhancing-participation-clinical-trials-eligibility-criteria-enrollment-practices-and-trial-designs",
+      "use": "High-level rationale to review unjustified exclusions; not direct proof of SYN-217 safety."
+    },
+    {
+      "id": "FDA-2020-ORG",
+      "type": "authentic_public_guidance",
+      "title": "Cancer Clinical Trial Eligibility Criteria: Patients with Organ Dysfunction or Prior or Concurrent Malignancies",
+      "date": "2020-07",
+      "status": "Final, nonbinding guidance",
+      "url": "https://www.fda.gov/regulatory-information/search-fda-guidance-documents/cancer-clinical-trial-eligibility-criteria-patients-organ-dysfunction-or-prior-or-concurrent",
+      "use": "Organ-dysfunction eligibility should reflect drug- and patient-specific considerations."
+    },
+    {
+      "id": "FDA-2026-LAB",
+      "type": "authentic_public_guidance",
+      "title": "Cancer Clinical Trial Eligibility Criteria: Laboratory Values",
+      "date": "2026-07",
+      "status": "Final, nonbinding guidance",
+      "url": "https://www.fda.gov/regulatory-information/search-fda-guidance-documents/cancer-clinical-trial-eligibility-criteria-laboratory-values",
+      "use": "Laboratory restrictions need a justified safety rationale and may be reconsidered as evidence accumulates."
+    },
+    {
+      "id": "FDA-2026-PS",
+      "type": "authentic_public_guidance",
+      "title": "Cancer Clinical Trial Eligibility Criteria: Performance Status",
+      "date": "2026-07",
+      "status": "Final, nonbinding guidance",
+      "url": "https://www.fda.gov/regulatory-information/search-fda-guidance-documents/cancer-clinical-trial-eligibility-criteria-performance-status",
+      "use": "Review the rationale for performance-status restrictions; this demo conservatively keeps the ECOG limit unchanged."
+    },
+    {
+      "id": "FDA-2026-DDI",
+      "type": "authentic_public_guidance",
+      "title": "Cancer Clinical Trial Eligibility Criteria: Washout Periods and Concomitant Medications",
+      "date": "2026-07",
+      "status": "Final, nonbinding guidance",
+      "url": "https://www.fda.gov/regulatory-information/search-fda-guidance-documents/cancer-clinical-trial-eligibility-criteria-washout-periods-and-concomitant-medications",
+      "use": "Medication restrictions should relate to relevant drug interaction evidence."
+    }
+  ],
+  "fictional_drug_evidence": [
+    {
+      "id": "SYN-PK-01",
+      "type": "fabricated_drug_specific_evidence",
+      "fictional": true,
+      "label": "SYN-217 mass-balance pilot",
+      "sample_size": 12,
+      "summary": "Fictional model: about 7% of a dose recovered unchanged in urine; CYP3A pathway is important.",
+      "limitations": "A route-of-elimination observation alone cannot establish safety in renal impairment."
+    },
+    {
+      "id": "SYN-PK-02",
+      "type": "fabricated_drug_specific_evidence",
+      "fictional": true,
+      "label": "SYN-217 renal impairment PK sub-study",
+      "sample_size": 36,
+      "population": "Stable adult participants with eGFR 45–59 mL/min/1.73 m²",
+      "summary": "Fictional modeled exposure ratio (AUC) 1.12 compared with the reference group, and no clear early exposure-related safety pattern in this small sample.",
+      "limitations": "Small invented dataset; no data for eGFR <45; no conclusion that any proposed patient is safe.",
+      "supports": "Only a clinician-reviewed discussion of revising the synthetic renal eligibility boundary to >=45, not a treatment or enrollment recommendation."
+    },
+    {
+      "id": "SYN-DDI-03",
+      "type": "fabricated_drug_specific_evidence",
+      "fictional": true,
+      "label": "SYN-217 strong CYP3A inhibitor interaction study",
+      "sample_size": 12,
+      "summary": "Fictional model: coadministration with a strong CYP3A inhibitor was associated with a 2.7-fold higher exposure.",
+      "supports": "Retain the modeled strong CYP3A inhibitor exclusion pending drug-specific clinical review."
+    },
+    {
+      "id": "SYN-PS-04",
+      "type": "fabricated_drug_specific_evidence",
+      "fictional": true,
+      "label": "SYN-217 performance-status evidence inventory",
+      "sample_size": 6,
+      "summary": "Fictional model: limited observations in ECOG 2 patients, insufficient to establish appropriate SYN-217 eligibility rules for this group.",
+      "supports": "Flag ECOG 2 for additional evidence review; retain the original ECOG 0–1 limit for the current scenario."
+    },
+    {
+      "id": "SYN-LIV-05",
+      "type": "fabricated_drug_specific_evidence",
+      "fictional": true,
+      "label": "SYN-217 hepatic evaluation inventory",
+      "sample_size": 0,
+      "summary": "Fictional model: evidence is inadequate to propose eligibility for moderate or severe hepatic impairment.",
+      "supports": "Retain the current modeled hepatic exclusions; missing hepatic status causes indeterminate classification unless another criterion excludes."
+    },
+    {
+      "id": "SYN-CARD-06",
+      "type": "fabricated_drug_specific_evidence",
+      "fictional": true,
+      "label": "SYN-217 cardiac safety evaluation inventory",
+      "sample_size": 0,
+      "summary": "Fictional model: no adequate evidence to support including clinically unstable cardiac disease.",
+      "supports": "Retain modeled exclusion for clinically unstable cardiac disease."
+    }
+  ],
+  "clinical_criteria": [
+    {
+      "id": "RENAL",
+      "original": "eGFR >=60 mL/min/1.73 m²",
+      "proposed": "eGFR >=45 mL/min/1.73 m² (candidate revision for expert review)",
+      "decision": "REVIEW_CANDIDATE",
+      "justification": "Synthetic supporting exposure data cover only a stable eGFR 45–59 subgroup; nothing supports extension below 45.",
+      "evidence_refs": [
+        "SYN-PK-01",
+        "SYN-PK-02"
+      ],
+      "regulatory_context_refs": [
+        "FDA-2025-REP",
+        "FDA-2020-ORG",
+        "FDA-2026-LAB"
+      ]
+    },
+    {
+      "id": "ECOG",
+      "original": "ECOG 0–1",
+      "proposed": null,
+      "decision": "NEEDS_ADDITIONAL_EVIDENCE",
+      "justification": "Fictional ECOG2 sample is too small to justify changing this scenario; FDA guidance recommends evaluating narrower exclusions in real protocols.",
+      "evidence_refs": [
+        "SYN-PS-04"
+      ],
+      "regulatory_context_refs": [
+        "FDA-2026-PS"
+      ]
+    },
+    {
+      "id": "DDI",
+      "original": "No strong CYP3A inhibitor coadministration",
+      "proposed": null,
+      "decision": "RETAIN",
+      "justification": "Fictional DDI evidence identifies exposure increase with flagged medication.",
+      "evidence_refs": [
+        "SYN-DDI-03"
+      ],
+      "regulatory_context_refs": [
+        "FDA-2026-DDI"
+      ]
+    },
+    {
+      "id": "HEPATIC",
+      "original": "Normal or mild hepatic impairment only",
+      "proposed": null,
+      "decision": "RETAIN_PENDING_EVIDENCE",
+      "justification": "No fictional drug evidence for moderate/severe hepatic impairment.",
+      "evidence_refs": [
+        "SYN-LIV-05"
+      ],
+      "regulatory_context_refs": [
+        "FDA-2020-ORG",
+        "FDA-2026-LAB"
+      ]
+    },
+    {
+      "id": "CARDIAC",
+      "original": "No clinically unstable cardiac disease",
+      "proposed": null,
+      "decision": "RETAIN_PENDING_EVIDENCE",
+      "justification": "No fictional drug evidence to justify including unstable cardiac disease.",
+      "evidence_refs": [
+        "SYN-CARD-06"
+      ],
+      "regulatory_context_refs": [
+        "FDA-2020-ORG"
+      ]
+    }
+  ],
+  "rule_sets": {
+    "common": {
+      "adult": true,
+      "trial_disease_and_prior_therapy_assumed_met_for_all_synthetic_records": true,
+      "ecog_max": 1,
+      "allowed_hepatic_status": [
+        "normal",
+        "mild"
+      ],
+      "strong_cyp3a_inhibitor_allowed": false,
+      "unstable_cardiac_disease_allowed": false
+    },
+    "original": {
+      "id": "SCENARIO-ORIGINAL",
+      "renal_egfr_min_inclusive": 60,
+      "status": "fictional_original_protocol"
+    },
+    "proposed": {
+      "id": "SCENARIO-RENAL-REVISION",
+      "renal_egfr_min_inclusive": 45,
+      "status": "approved_only_for_synthetic_demo_not_real_clinical_enrollment",
+      "required_fictional_evidence_ids": [
+        "SYN-PK-01",
+        "SYN-PK-02"
+      ],
+      "requires_real_clinician_review": true
+    },
+    "renal_metric_note": "eGFR (mL/min/1.73 m²) is a lab eligibility proxy in this fictional protocol, not an individualized dosing calculation."
+  },
+  "review_attention_index": {
+    "name": "Illustrative review-attention index",
+    "range": [
+      0,
+      100
+    ],
+    "applies_only_to": "Newly matching synthetic records under clinician-reviewed scenario; never used to override exclusion or missing info.",
+    "not_calibrated": true,
+    "not_a_safety_probability": true,
+    "formula": "renal = 12+(60-eGFR) if 45<=eGFR<60 else 0; ECOG1 +5; mild hepatic +8; controlled hypertension +3; stable type2 diabetes +5; stable cardiac history +10; cap at 100. Age is not scored.",
+    "ranking": "Ascending index among newly matching records only; score is a fictional UI review-priority demonstration."
+  },
+  "synthetic_patients": [
+    {
+      "id": "P01",
+      "age_years": 62,
+      "egfr_ml_min_1_73m2": 88,
+      "ecog": 0,
+      "hepatic_status": "normal",
+      "strong_cyp3a_inhibitor": false,
+      "clinically_unstable_cardiac_disease": false,
+      "controlled_hypertension": false,
+      "stable_type2_diabetes": false,
+      "stable_cardiac_history": false,
+      "note": "Originally eligible comparator"
+    },
+    {
+      "id": "P02",
+      "age_years": 68,
+      "egfr_ml_min_1_73m2": 56,
+      "ecog": 1,
+      "hepatic_status": "normal",
+      "strong_cyp3a_inhibitor": false,
+      "clinically_unstable_cardiac_disease": false,
+      "controlled_hypertension": true,
+      "stable_type2_diabetes": false,
+      "stable_cardiac_history": false,
+      "note": "Controlled hypertension; proposed renal revision candidate"
+    },
+    {
+      "id": "P03",
+      "age_years": 74,
+      "egfr_ml_min_1_73m2": 49,
+      "ecog": 1,
+      "hepatic_status": "mild",
+      "strong_cyp3a_inhibitor": false,
+      "clinically_unstable_cardiac_disease": false,
+      "controlled_hypertension": true,
+      "stable_type2_diabetes": false,
+      "stable_cardiac_history": false,
+      "note": "Mild hepatic impairment and stable hypertension"
+    },
+    {
+      "id": "P04",
+      "age_years": 59,
+      "egfr_ml_min_1_73m2": 44,
+      "ecog": 1,
+      "hepatic_status": "normal",
+      "strong_cyp3a_inhibitor": false,
+      "clinically_unstable_cardiac_disease": false,
+      "controlled_hypertension": false,
+      "stable_type2_diabetes": false,
+      "stable_cardiac_history": false,
+      "note": "Outside the fictional renal sub-study boundary"
+    },
+    {
+      "id": "P05",
+      "age_years": 71,
+      "egfr_ml_min_1_73m2": 53,
+      "ecog": 2,
+      "hepatic_status": "normal",
+      "strong_cyp3a_inhibitor": false,
+      "clinically_unstable_cardiac_disease": false,
+      "controlled_hypertension": false,
+      "stable_type2_diabetes": true,
+      "stable_cardiac_history": false,
+      "note": "Renal criterion changes but ECOG 2 still excludes"
+    },
+    {
+      "id": "P06",
+      "age_years": 66,
+      "egfr_ml_min_1_73m2": 55,
+      "ecog": 1,
+      "hepatic_status": "normal",
+      "strong_cyp3a_inhibitor": true,
+      "clinically_unstable_cardiac_disease": false,
+      "controlled_hypertension": false,
+      "stable_type2_diabetes": false,
+      "stable_cardiac_history": false,
+      "note": "Strong CYP3A inhibitor exclusion remains"
+    },
+    {
+      "id": "P07",
+      "age_years": 58,
+      "egfr_ml_min_1_73m2": 72,
+      "ecog": 1,
+      "hepatic_status": "severe",
+      "strong_cyp3a_inhibitor": false,
+      "clinically_unstable_cardiac_disease": false,
+      "controlled_hypertension": false,
+      "stable_type2_diabetes": false,
+      "stable_cardiac_history": false,
+      "note": "Severe hepatic impairment remains excluded"
+    },
+    {
+      "id": "P08",
+      "age_years": 61,
+      "egfr_ml_min_1_73m2": 63,
+      "ecog": 1,
+      "hepatic_status": "normal",
+      "strong_cyp3a_inhibitor": false,
+      "clinically_unstable_cardiac_disease": true,
+      "controlled_hypertension": false,
+      "stable_type2_diabetes": false,
+      "stable_cardiac_history": false,
+      "note": "Clinically unstable cardiac disease remains excluded"
+    },
+    {
+      "id": "P09",
+      "age_years": 79,
+      "egfr_ml_min_1_73m2": 46,
+      "ecog": 1,
+      "hepatic_status": "normal",
+      "strong_cyp3a_inhibitor": false,
+      "clinically_unstable_cardiac_disease": false,
+      "controlled_hypertension": false,
+      "stable_type2_diabetes": true,
+      "stable_cardiac_history": false,
+      "note": "Older adult with stable type 2 diabetes; no age-based penalty"
+    },
+    {
+      "id": "P10",
+      "age_years": 65,
+      "egfr_ml_min_1_73m2": null,
+      "ecog": 1,
+      "hepatic_status": "normal",
+      "strong_cyp3a_inhibitor": false,
+      "clinically_unstable_cardiac_disease": false,
+      "controlled_hypertension": false,
+      "stable_type2_diabetes": false,
+      "stable_cardiac_history": false,
+      "note": "Renal laboratory value missing"
+    },
+    {
+      "id": "P11",
+      "age_years": 62,
+      "egfr_ml_min_1_73m2": 45,
+      "ecog": 1,
+      "hepatic_status": "mild",
+      "strong_cyp3a_inhibitor": false,
+      "clinically_unstable_cardiac_disease": false,
+      "controlled_hypertension": true,
+      "stable_type2_diabetes": false,
+      "stable_cardiac_history": false,
+      "note": "At the inclusive proposed renal threshold"
+    },
+    {
+      "id": "P12",
+      "age_years": 68,
+      "egfr_ml_min_1_73m2": 65,
+      "ecog": 2,
+      "hepatic_status": "normal",
+      "strong_cyp3a_inhibitor": false,
+      "clinically_unstable_cardiac_disease": false,
+      "controlled_hypertension": false,
+      "stable_type2_diabetes": false,
+      "stable_cardiac_history": false,
+      "note": "ECOG 2 evidence gap; excluded in both scenarios"
+    },
+    {
+      "id": "P13",
+      "age_years": 80,
+      "egfr_ml_min_1_73m2": 58,
+      "ecog": 0,
+      "hepatic_status": "normal",
+      "strong_cyp3a_inhibitor": false,
+      "clinically_unstable_cardiac_disease": false,
+      "controlled_hypertension": false,
+      "stable_type2_diabetes": false,
+      "stable_cardiac_history": false,
+      "note": "Older adult with mildly reduced renal function; no age penalty"
+    },
+    {
+      "id": "P14",
+      "age_years": 52,
+      "egfr_ml_min_1_73m2": 62,
+      "ecog": 0,
+      "hepatic_status": "normal",
+      "strong_cyp3a_inhibitor": false,
+      "clinically_unstable_cardiac_disease": false,
+      "controlled_hypertension": false,
+      "stable_type2_diabetes": true,
+      "stable_cardiac_history": false,
+      "note": "Originally eligible with controlled diabetes"
+    },
+    {
+      "id": "P15",
+      "age_years": 57,
+      "egfr_ml_min_1_73m2": 61,
+      "ecog": 1,
+      "hepatic_status": "mild",
+      "strong_cyp3a_inhibitor": false,
+      "clinically_unstable_cardiac_disease": false,
+      "controlled_hypertension": false,
+      "stable_type2_diabetes": false,
+      "stable_cardiac_history": true,
+      "note": "Originally eligible with stable cardiac history and mild hepatic impairment"
+    },
+    {
+      "id": "P16",
+      "age_years": 65,
+      "egfr_ml_min_1_73m2": 50,
+      "ecog": 1,
+      "hepatic_status": null,
+      "strong_cyp3a_inhibitor": false,
+      "clinically_unstable_cardiac_disease": false,
+      "controlled_hypertension": false,
+      "stable_type2_diabetes": false,
+      "stable_cardiac_history": false,
+      "note": "Hepatic status missing; becomes indeterminate under revised scenario"
+    },
+    {
+      "id": "P17",
+      "age_years": 45,
+      "egfr_ml_min_1_73m2": 59,
+      "ecog": 1,
+      "hepatic_status": "normal",
+      "strong_cyp3a_inhibitor": true,
+      "clinically_unstable_cardiac_disease": false,
+      "controlled_hypertension": true,
+      "stable_type2_diabetes": false,
+      "stable_cardiac_history": false,
+      "note": "Interaction exclusion takes precedence over renal revision"
+    },
+    {
+      "id": "P18",
+      "age_years": 65,
+      "egfr_ml_min_1_73m2": 60,
+      "ecog": 1,
+      "hepatic_status": "normal",
+      "strong_cyp3a_inhibitor": false,
+      "clinically_unstable_cardiac_disease": false,
+      "controlled_hypertension": false,
+      "stable_type2_diabetes": false,
+      "stable_cardiac_history": false,
+      "note": "Exactly at original renal threshold"
+    },
+    {
+      "id": "P19",
+      "age_years": 60,
+      "egfr_ml_min_1_73m2": 45,
+      "ecog": 0,
+      "hepatic_status": "normal",
+      "strong_cyp3a_inhibitor": false,
+      "clinically_unstable_cardiac_disease": false,
+      "controlled_hypertension": false,
+      "stable_type2_diabetes": false,
+      "stable_cardiac_history": false,
+      "note": "Exactly at proposed renal threshold"
+    },
+    {
+      "id": "P20",
+      "age_years": 70,
+      "egfr_ml_min_1_73m2": 44.9,
+      "ecog": 0,
+      "hepatic_status": "normal",
+      "strong_cyp3a_inhibitor": false,
+      "clinically_unstable_cardiac_disease": false,
+      "controlled_hypertension": false,
+      "stable_type2_diabetes": false,
+      "stable_cardiac_history": false,
+      "note": "Just below proposed boundary; remains excluded"
+    }
+  ],
+  "expected_results": {
+    "patient_results": [
+      {
+        "patient_id": "P01",
+        "original": {
+          "status": "MEETS_MODELED_RULES",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 88 meets the configured 60 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [],
+          "missing_data": []
+        },
+        "proposed": {
+          "status": "MEETS_MODELED_RULES",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 88 meets the configured 45 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [],
+          "missing_data": []
+        },
+        "newly_meets_rules": false,
+        "review_priority_index": null,
+        "proposed_change_explanation": null,
+        "supporting_drug_evidence_ids": []
+      },
+      {
+        "patient_id": "P02",
+        "original": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "FAIL",
+              "reason": "eGFR 56 is below the configured 60 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [
+            "eGFR 56 is below the configured 60 threshold"
+          ],
+          "missing_data": []
+        },
+        "proposed": {
+          "status": "MEETS_MODELED_RULES",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 56 meets the configured 45 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [],
+          "missing_data": []
+        },
+        "newly_meets_rules": true,
+        "review_priority_index": {
+          "score": 24,
+          "factors": {
+            "renal": 16,
+            "performance_status": 5,
+            "mild_hepatic_impairment": 0,
+            "controlled_hypertension": 3,
+            "stable_type2_diabetes": 0,
+            "stable_cardiac_history": 0
+          },
+          "interpretation": "Illustrative reviewer-attention index. NOT clinical risk probability and NOT validated for enrollment."
+        },
+        "proposed_change_explanation": "Previously excluded due to eGFR 56 < 60; revised scenario permits eGFR >= 45 while unchanged criteria are met",
+        "supporting_drug_evidence_ids": [
+          "SYN-PK-01",
+          "SYN-PK-02"
+        ],
+        "rank_among_newly_matching": 2
+      },
+      {
+        "patient_id": "P03",
+        "original": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "FAIL",
+              "reason": "eGFR 49 is below the configured 60 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [
+            "eGFR 49 is below the configured 60 threshold"
+          ],
+          "missing_data": []
+        },
+        "proposed": {
+          "status": "MEETS_MODELED_RULES",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 49 meets the configured 45 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [],
+          "missing_data": []
+        },
+        "newly_meets_rules": true,
+        "review_priority_index": {
+          "score": 39,
+          "factors": {
+            "renal": 23,
+            "performance_status": 5,
+            "mild_hepatic_impairment": 8,
+            "controlled_hypertension": 3,
+            "stable_type2_diabetes": 0,
+            "stable_cardiac_history": 0
+          },
+          "interpretation": "Illustrative reviewer-attention index. NOT clinical risk probability and NOT validated for enrollment."
+        },
+        "proposed_change_explanation": "Previously excluded due to eGFR 49 < 60; revised scenario permits eGFR >= 45 while unchanged criteria are met",
+        "supporting_drug_evidence_ids": [
+          "SYN-PK-01",
+          "SYN-PK-02"
+        ],
+        "rank_among_newly_matching": 5
+      },
+      {
+        "patient_id": "P04",
+        "original": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "FAIL",
+              "reason": "eGFR 44 is below the configured 60 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [
+            "eGFR 44 is below the configured 60 threshold"
+          ],
+          "missing_data": []
+        },
+        "proposed": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "FAIL",
+              "reason": "eGFR 44 is below the configured 45 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [
+            "eGFR 44 is below the configured 45 threshold"
+          ],
+          "missing_data": []
+        },
+        "newly_meets_rules": false,
+        "review_priority_index": null,
+        "proposed_change_explanation": null,
+        "supporting_drug_evidence_ids": []
+      },
+      {
+        "patient_id": "P05",
+        "original": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "FAIL",
+              "reason": "eGFR 53 is below the configured 60 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "FAIL",
+              "reason": "ECOG 2+ is outside this fictional protocol's unchanged performance-status rule"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [
+            "eGFR 53 is below the configured 60 threshold",
+            "ECOG 2+ is outside this fictional protocol's unchanged performance-status rule"
+          ],
+          "missing_data": []
+        },
+        "proposed": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 53 meets the configured 45 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "FAIL",
+              "reason": "ECOG 2+ is outside this fictional protocol's unchanged performance-status rule"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [
+            "ECOG 2+ is outside this fictional protocol's unchanged performance-status rule"
+          ],
+          "missing_data": []
+        },
+        "newly_meets_rules": false,
+        "review_priority_index": null,
+        "proposed_change_explanation": null,
+        "supporting_drug_evidence_ids": []
+      },
+      {
+        "patient_id": "P06",
+        "original": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "FAIL",
+              "reason": "eGFR 55 is below the configured 60 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "FAIL",
+              "reason": "Strong CYP3A inhibitor interaction restriction remains active"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [
+            "eGFR 55 is below the configured 60 threshold",
+            "Strong CYP3A inhibitor interaction restriction remains active"
+          ],
+          "missing_data": []
+        },
+        "proposed": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 55 meets the configured 45 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "FAIL",
+              "reason": "Strong CYP3A inhibitor interaction restriction remains active"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [
+            "Strong CYP3A inhibitor interaction restriction remains active"
+          ],
+          "missing_data": []
+        },
+        "newly_meets_rules": false,
+        "review_priority_index": null,
+        "proposed_change_explanation": null,
+        "supporting_drug_evidence_ids": []
+      },
+      {
+        "patient_id": "P07",
+        "original": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 72 meets the configured 60 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "FAIL",
+              "reason": "Moderate/severe hepatic impairment remains excluded under fictional protocol"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [
+            "Moderate/severe hepatic impairment remains excluded under fictional protocol"
+          ],
+          "missing_data": []
+        },
+        "proposed": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 72 meets the configured 45 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "FAIL",
+              "reason": "Moderate/severe hepatic impairment remains excluded under fictional protocol"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [
+            "Moderate/severe hepatic impairment remains excluded under fictional protocol"
+          ],
+          "missing_data": []
+        },
+        "newly_meets_rules": false,
+        "review_priority_index": null,
+        "proposed_change_explanation": null,
+        "supporting_drug_evidence_ids": []
+      },
+      {
+        "patient_id": "P08",
+        "original": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 63 meets the configured 60 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "FAIL",
+              "reason": "Clinically unstable cardiac disease exclusion remains active"
+            }
+          ],
+          "exclusion_reasons": [
+            "Clinically unstable cardiac disease exclusion remains active"
+          ],
+          "missing_data": []
+        },
+        "proposed": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 63 meets the configured 45 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "FAIL",
+              "reason": "Clinically unstable cardiac disease exclusion remains active"
+            }
+          ],
+          "exclusion_reasons": [
+            "Clinically unstable cardiac disease exclusion remains active"
+          ],
+          "missing_data": []
+        },
+        "newly_meets_rules": false,
+        "review_priority_index": null,
+        "proposed_change_explanation": null,
+        "supporting_drug_evidence_ids": []
+      },
+      {
+        "patient_id": "P09",
+        "original": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "FAIL",
+              "reason": "eGFR 46 is below the configured 60 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [
+            "eGFR 46 is below the configured 60 threshold"
+          ],
+          "missing_data": []
+        },
+        "proposed": {
+          "status": "MEETS_MODELED_RULES",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 46 meets the configured 45 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [],
+          "missing_data": []
+        },
+        "newly_meets_rules": true,
+        "review_priority_index": {
+          "score": 36,
+          "factors": {
+            "renal": 26,
+            "performance_status": 5,
+            "mild_hepatic_impairment": 0,
+            "controlled_hypertension": 0,
+            "stable_type2_diabetes": 5,
+            "stable_cardiac_history": 0
+          },
+          "interpretation": "Illustrative reviewer-attention index. NOT clinical risk probability and NOT validated for enrollment."
+        },
+        "proposed_change_explanation": "Previously excluded due to eGFR 46 < 60; revised scenario permits eGFR >= 45 while unchanged criteria are met",
+        "supporting_drug_evidence_ids": [
+          "SYN-PK-01",
+          "SYN-PK-02"
+        ],
+        "rank_among_newly_matching": 4
+      },
+      {
+        "patient_id": "P10",
+        "original": {
+          "status": "INDETERMINATE",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "UNKNOWN",
+              "reason": "Required eGFR measurement is missing"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [],
+          "missing_data": [
+            "Required eGFR measurement is missing"
+          ]
+        },
+        "proposed": {
+          "status": "INDETERMINATE",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "UNKNOWN",
+              "reason": "Required eGFR measurement is missing"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [],
+          "missing_data": [
+            "Required eGFR measurement is missing"
+          ]
+        },
+        "newly_meets_rules": false,
+        "review_priority_index": null,
+        "proposed_change_explanation": null,
+        "supporting_drug_evidence_ids": []
+      },
+      {
+        "patient_id": "P11",
+        "original": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "FAIL",
+              "reason": "eGFR 45 is below the configured 60 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [
+            "eGFR 45 is below the configured 60 threshold"
+          ],
+          "missing_data": []
+        },
+        "proposed": {
+          "status": "MEETS_MODELED_RULES",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 45 meets the configured 45 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [],
+          "missing_data": []
+        },
+        "newly_meets_rules": true,
+        "review_priority_index": {
+          "score": 43,
+          "factors": {
+            "renal": 27,
+            "performance_status": 5,
+            "mild_hepatic_impairment": 8,
+            "controlled_hypertension": 3,
+            "stable_type2_diabetes": 0,
+            "stable_cardiac_history": 0
+          },
+          "interpretation": "Illustrative reviewer-attention index. NOT clinical risk probability and NOT validated for enrollment."
+        },
+        "proposed_change_explanation": "Previously excluded due to eGFR 45 < 60; revised scenario permits eGFR >= 45 while unchanged criteria are met",
+        "supporting_drug_evidence_ids": [
+          "SYN-PK-01",
+          "SYN-PK-02"
+        ],
+        "rank_among_newly_matching": 6
+      },
+      {
+        "patient_id": "P12",
+        "original": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 65 meets the configured 60 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "FAIL",
+              "reason": "ECOG 2+ is outside this fictional protocol's unchanged performance-status rule"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [
+            "ECOG 2+ is outside this fictional protocol's unchanged performance-status rule"
+          ],
+          "missing_data": []
+        },
+        "proposed": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 65 meets the configured 45 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "FAIL",
+              "reason": "ECOG 2+ is outside this fictional protocol's unchanged performance-status rule"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [
+            "ECOG 2+ is outside this fictional protocol's unchanged performance-status rule"
+          ],
+          "missing_data": []
+        },
+        "newly_meets_rules": false,
+        "review_priority_index": null,
+        "proposed_change_explanation": null,
+        "supporting_drug_evidence_ids": []
+      },
+      {
+        "patient_id": "P13",
+        "original": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "FAIL",
+              "reason": "eGFR 58 is below the configured 60 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [
+            "eGFR 58 is below the configured 60 threshold"
+          ],
+          "missing_data": []
+        },
+        "proposed": {
+          "status": "MEETS_MODELED_RULES",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 58 meets the configured 45 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [],
+          "missing_data": []
+        },
+        "newly_meets_rules": true,
+        "review_priority_index": {
+          "score": 14,
+          "factors": {
+            "renal": 14,
+            "performance_status": 0,
+            "mild_hepatic_impairment": 0,
+            "controlled_hypertension": 0,
+            "stable_type2_diabetes": 0,
+            "stable_cardiac_history": 0
+          },
+          "interpretation": "Illustrative reviewer-attention index. NOT clinical risk probability and NOT validated for enrollment."
+        },
+        "proposed_change_explanation": "Previously excluded due to eGFR 58 < 60; revised scenario permits eGFR >= 45 while unchanged criteria are met",
+        "supporting_drug_evidence_ids": [
+          "SYN-PK-01",
+          "SYN-PK-02"
+        ],
+        "rank_among_newly_matching": 1
+      },
+      {
+        "patient_id": "P14",
+        "original": {
+          "status": "MEETS_MODELED_RULES",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 62 meets the configured 60 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [],
+          "missing_data": []
+        },
+        "proposed": {
+          "status": "MEETS_MODELED_RULES",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 62 meets the configured 45 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [],
+          "missing_data": []
+        },
+        "newly_meets_rules": false,
+        "review_priority_index": null,
+        "proposed_change_explanation": null,
+        "supporting_drug_evidence_ids": []
+      },
+      {
+        "patient_id": "P15",
+        "original": {
+          "status": "MEETS_MODELED_RULES",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 61 meets the configured 60 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [],
+          "missing_data": []
+        },
+        "proposed": {
+          "status": "MEETS_MODELED_RULES",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 61 meets the configured 45 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [],
+          "missing_data": []
+        },
+        "newly_meets_rules": false,
+        "review_priority_index": null,
+        "proposed_change_explanation": null,
+        "supporting_drug_evidence_ids": []
+      },
+      {
+        "patient_id": "P16",
+        "original": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "FAIL",
+              "reason": "eGFR 50 is below the configured 60 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "UNKNOWN",
+              "reason": "Hepatic assessment is unavailable"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [
+            "eGFR 50 is below the configured 60 threshold"
+          ],
+          "missing_data": [
+            "Hepatic assessment is unavailable"
+          ]
+        },
+        "proposed": {
+          "status": "INDETERMINATE",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 50 meets the configured 45 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "UNKNOWN",
+              "reason": "Hepatic assessment is unavailable"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [],
+          "missing_data": [
+            "Hepatic assessment is unavailable"
+          ]
+        },
+        "newly_meets_rules": false,
+        "review_priority_index": null,
+        "proposed_change_explanation": null,
+        "supporting_drug_evidence_ids": []
+      },
+      {
+        "patient_id": "P17",
+        "original": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "FAIL",
+              "reason": "eGFR 59 is below the configured 60 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "FAIL",
+              "reason": "Strong CYP3A inhibitor interaction restriction remains active"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [
+            "eGFR 59 is below the configured 60 threshold",
+            "Strong CYP3A inhibitor interaction restriction remains active"
+          ],
+          "missing_data": []
+        },
+        "proposed": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 59 meets the configured 45 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "FAIL",
+              "reason": "Strong CYP3A inhibitor interaction restriction remains active"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [
+            "Strong CYP3A inhibitor interaction restriction remains active"
+          ],
+          "missing_data": []
+        },
+        "newly_meets_rules": false,
+        "review_priority_index": null,
+        "proposed_change_explanation": null,
+        "supporting_drug_evidence_ids": []
+      },
+      {
+        "patient_id": "P18",
+        "original": {
+          "status": "MEETS_MODELED_RULES",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 60 meets the configured 60 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [],
+          "missing_data": []
+        },
+        "proposed": {
+          "status": "MEETS_MODELED_RULES",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 60 meets the configured 45 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [],
+          "missing_data": []
+        },
+        "newly_meets_rules": false,
+        "review_priority_index": null,
+        "proposed_change_explanation": null,
+        "supporting_drug_evidence_ids": []
+      },
+      {
+        "patient_id": "P19",
+        "original": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "FAIL",
+              "reason": "eGFR 45 is below the configured 60 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [
+            "eGFR 45 is below the configured 60 threshold"
+          ],
+          "missing_data": []
+        },
+        "proposed": {
+          "status": "MEETS_MODELED_RULES",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "PASS",
+              "reason": "eGFR 45 meets the configured 45 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [],
+          "missing_data": []
+        },
+        "newly_meets_rules": true,
+        "review_priority_index": {
+          "score": 27,
+          "factors": {
+            "renal": 27,
+            "performance_status": 0,
+            "mild_hepatic_impairment": 0,
+            "controlled_hypertension": 0,
+            "stable_type2_diabetes": 0,
+            "stable_cardiac_history": 0
+          },
+          "interpretation": "Illustrative reviewer-attention index. NOT clinical risk probability and NOT validated for enrollment."
+        },
+        "proposed_change_explanation": "Previously excluded due to eGFR 45 < 60; revised scenario permits eGFR >= 45 while unchanged criteria are met",
+        "supporting_drug_evidence_ids": [
+          "SYN-PK-01",
+          "SYN-PK-02"
+        ],
+        "rank_among_newly_matching": 3
+      },
+      {
+        "patient_id": "P20",
+        "original": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "FAIL",
+              "reason": "eGFR 44.9 is below the configured 60 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [
+            "eGFR 44.9 is below the configured 60 threshold"
+          ],
+          "missing_data": []
+        },
+        "proposed": {
+          "status": "EXCLUDED",
+          "criteria": [
+            {
+              "criterion": "RENAL",
+              "result": "FAIL",
+              "reason": "eGFR 44.9 is below the configured 45 threshold"
+            },
+            {
+              "criterion": "ECOG",
+              "result": "PASS",
+              "reason": "ECOG 0–1 meets unchanged criterion"
+            },
+            {
+              "criterion": "HEPATIC",
+              "result": "PASS",
+              "reason": "Normal/mild hepatic status meets unchanged criterion"
+            },
+            {
+              "criterion": "DDI",
+              "result": "PASS",
+              "reason": "No flagged strong CYP3A inhibitor"
+            },
+            {
+              "criterion": "CARDIAC",
+              "result": "PASS",
+              "reason": "No flagged clinically unstable cardiac disease"
+            }
+          ],
+          "exclusion_reasons": [
+            "eGFR 44.9 is below the configured 45 threshold"
+          ],
+          "missing_data": []
+        },
+        "newly_meets_rules": false,
+        "review_priority_index": null,
+        "proposed_change_explanation": null,
+        "supporting_drug_evidence_ids": []
+      }
+    ],
+    "cohort_counts": {
+      "original": {
+        "MEETS_MODELED_RULES": 4,
+        "EXCLUDED": 15,
+        "INDETERMINATE": 1
+      },
+      "proposed": {
+        "MEETS_MODELED_RULES": 10,
+        "EXCLUDED": 8,
+        "INDETERMINATE": 2
+      }
+    },
+    "newly_matching_ranked_ids": [
+      "P13",
+      "P02",
+      "P19",
+      "P09",
+      "P03",
+      "P11"
+    ]
+  },
+  "non_goals": [
+    "predict adverse events",
+    "establish treatment safety",
+    "recommend real-world dosage",
+    "automatically approve actual enrollment",
+    "treat FDA guidance as drug-specific evidence"
+  ],
+  "suggested_demo_flow": [
+    "Open study and inspect broad renal criterion",
+    "Show sources: official guidance vs fictional drug evidence",
+    "Compare original and proposed cohorts",
+    "Rank newly matching synthetic records with explanatory nonclinical index",
+    "Inspect P05 and P06 to demonstrate unchanged exclusions",
+    "Inspect P10 and P16 to demonstrate missing data",
+    "Export a review report with full assumptions and evidence references"
+  ]
+}
