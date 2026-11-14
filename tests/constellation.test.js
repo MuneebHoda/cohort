@@ -4,11 +4,11 @@ import { getMarkerLayout } from '../src/constellation.js';
 import { anchorPatients } from '../src/patients.js';
 import { evaluateCohort } from '../src/cohort.js';
 
-test('the constellation has exactly one stable patient marker per loaded record', () => {
+test('the population registry retains one deterministic clinical group assignment per loaded record', () => {
   const original = getMarkerLayout(evaluateCohort(anchorPatients, false).records);
   const proposed = getMarkerLayout(evaluateCohort(anchorPatients, true).records);
   assert.equal(original.length, anchorPatients.length);
-  assert.ok(original.every(marker => marker.columns === 5 && marker.rows === 4));
+  assert.ok(original.every(marker => [-.25, .25].includes(marker.x) && [-.25, .25].includes(marker.y)));
   assert.deepEqual(original.map(marker => marker.id), anchorPatients.map(patient => patient.id));
   assert.deepEqual(proposed.map(marker => marker.id), original.map(marker => marker.id));
   assert.deepEqual(getMarkerLayout([...evaluateCohort(anchorPatients, true).records].reverse()), proposed);
@@ -18,7 +18,7 @@ test('the constellation has exactly one stable patient marker per loaded record'
   assert.equal(proposed.filter(marker => marker.group === 'indeterminate').length, 2);
 });
 
-test('only records with changed aggregate classifications change constellation group and position', () => {
+test('only reclassified records change their assigned overview group address', () => {
   const baseline = getMarkerLayout(evaluateCohort(anchorPatients, false).records);
   const proposed = getMarkerLayout(evaluateCohort(anchorPatients, true).records);
   const moved = proposed.filter(marker => {

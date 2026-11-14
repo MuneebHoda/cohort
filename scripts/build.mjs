@@ -6,4 +6,6 @@ await mkdir('dist/vendor/addons/controls', { recursive: true });
 for (const file of ['three.module.js', 'three.core.js']) await cp(`node_modules/three/build/${file}`, `dist/vendor/${file}`);
 await cp('node_modules/three/examples/jsm/controls/OrbitControls.js', 'dist/vendor/addons/controls/OrbitControls.js');
 await cp('node_modules/three/LICENSE', 'dist/vendor/LICENSE');
-console.log('Built Cohort → dist/ (static, locally bundled Three.js; no external services)');
+await cp('node_modules/motion/dist/motion.js', 'dist/vendor/motion.js');
+await cp('node_modules/motion/LICENSE.md', 'dist/vendor/MOTION-LICENSE.md');
+console.log('Built Cohort → dist/ (static, locally bundled Three.js and Motion; no external services)');

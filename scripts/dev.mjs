@@ -5,6 +5,7 @@ const root = process.cwd();
 const port = Number(process.env.PORT || 5173);
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
 const vendor = {
+  '/vendor/motion.js': 'node_modules/motion/dist/motion.js',
   '/vendor/three.module.js': 'node_modules/three/build/three.module.js',
   '/vendor/three.core.js': 'node_modules/three/build/three.core.js',
   '/vendor/addons/controls/OrbitControls.js': 'node_modules/three/examples/jsm/controls/OrbitControls.js',

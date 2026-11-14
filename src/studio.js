@@ -26,6 +26,8 @@ export function mountStudio() {
   let profileTimer;
   let notificationTimer;
   let mobileDetailOpen = false;
+  let mobileReturnToStage = false;
+  const compactViewport = matchMedia('(max-width: 900px)');
   let lastRunId = null;
   let previousPatient = null;
   let previousDetailTab = null;
@@ -38,14 +40,14 @@ export function mountStudio() {
   app.innerHTML = `<header class="studio-header"><a class="studio-brand" href="#patient" aria-label="Cohort patient review"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="16" cy="15" r="8"/><circle cx="25" cy="15" r="8"/><circle cx="20.5" cy="23" r="8"/></svg><span>${e(product.wordmark)}</span></a><div class="studio-study"><span>CLINICAL DEVELOPMENT / ${e(study.phase).toUpperCase()}</span><h1>${e(study.drug)} <span>${e(study.title.replace(study.drug, '').trim())}</span></h1></div><span class="synthetic-pill">${icon('flask')} Synthetic demonstration</span><div class="studio-header-actions"><button class="studio-icon-button" data-action="guide" aria-label="Open demonstration guide" title="Demonstration guide">${icon('book')}</button><button class="studio-reset" data-action="reset">${icon('reset')}<span>Reset dataset</span></button></div></header>
     <div class="studio-navigation"><nav aria-label="Workspace perspectives" id="perspective-tabs"></nav><div id="scenario-controls"></div><details class="study-tools-menu"><summary>${icon('file')}<span>Study tools</span>${icon('chevron')}</summary><div><button data-tool="protocol">Study protocol</button><button data-tool="criteria">Criterion review desk</button><button data-tool="population">Boundary explorer</button><button data-action="report">Current review packet</button><button data-action="guide">Demonstration guide</button></div></details></div>
     <div id="workspace-context" class="workspace-context"></div>
-    <main id="main" tabindex="-1" class="studio-main"><section id="patient-perspective" aria-label="Patient Review"><div class="patient-studio-layout"><aside id="patient-queue" class="patient-queue-region"></aside><div class="population-stage-column"><div id="patient-scene-slot"></div><section id="scene-story" class="scene-story"></section><div class="stage-reading-note">${icon('shield')} Explicit rules. Traceable evidence. Expert review required.</div></div><div class="patient-detail-region"><button class="mobile-back" data-action="back-to-queue">← Back to patient queue</button><div id="patient-detail"></div></div></div></section>
+    <main id="main" tabindex="-1" class="studio-main"><section id="patient-perspective" aria-label="Patient Review"><button class="mobile-population-jump studio-button" data-action="population-jump">Explore population ↘</button><div class="patient-studio-layout"><aside id="patient-queue" class="patient-queue-region"></aside><div class="population-stage-column"><div id="patient-scene-slot"></div><section id="scene-story" class="scene-story"></section><div class="stage-reading-note">${icon('shield')} Explicit rules. Traceable evidence. Expert review required.</div></div><div class="patient-detail-region"><button class="mobile-back" data-action="back-to-queue">← Back to patient queue</button><div id="patient-detail"></div></div></div></section>
     <section id="trial-perspective" aria-label="Trial Strategy" hidden><div id="trial-summary"></div><div class="trial-studio-layout"><div class="trial-population-column"><div id="trial-scene-slot"></div><section class="trial-linked-selection studio-sheet"><span class="studio-eyebrow">ONE CONNECTED ANALYSIS</span><h3>The same patients, in context.</h3><p>Age and clinical subgroup selections filter the population and patient table together. Whole-cohort counts remain explicit.</p><div id="trial-selection"></div><button class="studio-button" data-perspective="patient">${icon('people')} Open synchronized patient table ${icon('arrow')}</button></section></div><div id="trial-analytics"></div></div></section>
     <section id="decision-perspective" aria-label="Decision Review" hidden><div id="decision-content"></div></section></main>
     <footer class="studio-footer"><span>FICTIONAL STUDY · SYNTHETIC RECORDS · LOCAL CALCULATIONS</span><span>The index is unvalidated. Modeled matching is not enrollment approval.</span></footer>`;
   const sceneHost = document.createElement('div');
   sceneHost.className = 'constellation-host';
   document.querySelector('#patient-scene-slot').append(sceneHost);
-  const scene = createConstellation(sceneHost, { onSelect: selectPatient });
+  const scene = createConstellation(sceneHost, { onSelect: id => selectPatient(id, 'scene') });
 
   function announce(message) {
     const notice = document.querySelector('#notification');
@@ -103,6 +105,7 @@ export function mountStudio() {
     app.dataset.selectedPatient = state.selectedPatientId || '';
     app.dataset.perspective = state.perspective;
     app.classList.toggle('mobile-detail-open', mobileDetailOpen);
+    document.querySelector('.mobile-back').textContent = mobileReturnToStage ? '← Back to population' : '← Back to patient queue';
     patch('perspective-tabs', [['patient', 'people', 'Patient Review'], ['trial', 'chart', 'Trial Strategy'], ['decision', 'shield', 'Decision Review']].map(([id, symbol, label]) => `<button data-perspective="${id}" ${state.perspective === id ? 'aria-current="page"' : ''} class="perspective-tab ${state.perspective === id ? 'active' : ''}">${icon(symbol)}<span>${label}</span></button>`).join(''));
     patch('scenario-controls', `<div class="scenario-segmented" aria-label="Active protocol scenario"><button data-scenario="original" aria-pressed="${state.scenarioId === 'original'}" class="${state.scenarioId === 'original' ? 'active' : ''}">Original</button><button data-scenario="renal-revision" aria-pressed="${state.scenarioId === 'renal-revision'}" class="${state.scenarioId === 'renal-revision' ? 'active proposed' : ''}">Proposed <span>renal</span></button></div><details class="scenario-advanced"><summary aria-label="Inspect evidence-gated scenario options" title="Scenario options">${icon('layers')}</summary><div><label for="scenario-options">Predefined scenario</label><select id="scenario-options"><option value="original" ${state.scenarioId === 'original' ? 'selected' : ''}>Original protocol</option>${clinicalConfig.scenarios.map(s => `<option value="${e(s.id)}" ${state.scenarioId === s.id ? 'selected' : ''}>${e(s.label)} · ${e(s.status)}</option>`).join('')}</select><strong>${e(run.current.gate.active ? 'Applied to synthetic comparison' : run.current.gate.requested ? 'Withheld · original rules retained' : 'Original rules active')}</strong><p>${e(run.current.gate.reasons.join(' ') || 'No revision is currently applied. Proposed rules require explicit registered support and synthetic-demonstration approval.')}</p><small>Approval here applies only to this synthetic demo.</small></div></details>`);
     patch('workspace-context', renderContext(run, state));
@@ -145,9 +148,10 @@ export function mountStudio() {
     lastRunId = run.id;
   }
 
-  function selectPatient(id) {
+  function selectPatient(id, origin = 'table') {
+    scene.focusPatient(id);
     const unchanged = workspace.state.selectedPatientId === id;
-    if (matchMedia('(max-width: 900px)').matches && workspace.state.perspective === 'patient') mobileDetailOpen = true;
+    if (compactViewport.matches && workspace.state.perspective === 'patient') { mobileDetailOpen = true; mobileReturnToStage = origin === 'scene'; }
     workspace.selectPatient(id);
     // The same selected patient can still open the compact-screen detail.
     if (unchanged) render();
@@ -317,6 +321,7 @@ export function mountStudio() {
       }
       const action = button.dataset.action;
       if (action === 'clear-filters') workspace.setFilters({ status: 'all', age: 'all', subgroup: 'all', query: '', demographic: 'all' });
+      if (action === 'clear-filters-locate') { workspace.setFilters({ status: 'all', age: 'all', subgroup: 'all', query: '', demographic: 'all' }); scene.focusPatient(workspace.state.selectedPatientId); }
       if (action === 'dataset') changeDataset(workspace.state.dataset === 'casebook' ? 'expanded' : 'casebook');
       if (action === 'assumptions') showTool('assumptions');
       if (action === 'inspect-filtered') { const records = visibleRecords(workspace.run, workspace.state.filters); if (records.length && !records.some(record => record.id === workspace.state.selectedPatientId)) workspace.selectPatient(records[0].id); navigate('patient'); }
@@ -326,7 +331,21 @@ export function mountStudio() {
       if (action === 'close-evidence') evidenceDialog.close();
       if (action === 'report') showTool('report');
       if (action === 'guide') showGuide();
-      if (action === 'back-to-queue') { mobileDetailOpen = false; render(); document.querySelector(`[data-patient="${workspace.state.selectedPatientId}"]`)?.focus({ preventScroll: true }); }
+      if (action === 'population-jump') {
+        const target = document.querySelector('.constellation'); target.scrollIntoView({ block: 'start', behavior: 'instant' });
+        const heading = target.querySelector('h3'); heading.setAttribute('tabindex', '-1'); heading.focus({ preventScroll: true });
+      }
+      if (action === 'patient-table-jump') {
+        mobileDetailOpen = false; navigate('patient'); document.getElementById('patient-queue').scrollIntoView({ block: 'start', behavior: 'instant' });
+        document.querySelector('#patient-search')?.focus({ preventScroll: true });
+      }
+      if (action === 'back-to-queue') {
+        mobileDetailOpen = false; render();
+        if (mobileReturnToStage) {
+          const target = document.querySelector('.constellation'); target.scrollIntoView({ block: 'start', behavior: 'instant' });
+          document.querySelector(`[data-scene-patient="${workspace.state.selectedPatientId}"]`)?.focus({ preventScroll: true });
+        } else document.querySelector(`[data-patient="${workspace.state.selectedPatientId}"]`)?.focus({ preventScroll: true });
+      }
       if (['previous-patient', 'next-patient', 'previous', 'next'].includes(action)) {
         const records = visibleRecords(workspace.run, workspace.state.filters);
         const index = records.findIndex(r => r.id === workspace.state.selectedPatientId);
@@ -336,7 +355,7 @@ export function mountStudio() {
       if (action === 'reset') {
         clearTimeout(profileTimer); profileDraft = {}; draftEvaluation = null; mobileDetailOpen = false;
         for (const dialog of [evidenceDialog, toolDialog, profileDialog]) if (dialog.open) dialog.close();
-        workspace.reset(); history.replaceState({}, '', `#${workspace.state.perspective}`); announce(`Restored ${datasetDefinitions[workspace.state.dataset].shortLabel}: ${workspace.run.current.total} synthetic records and original protocol. Session history retained.`);
+        workspace.reset(); scene.showOverview(); history.replaceState({}, '', `#${workspace.state.perspective}`); announce(`Restored ${datasetDefinitions[workspace.state.dataset].shortLabel}: ${workspace.run.current.total} synthetic records and original protocol. Session history retained.`);
       }
       if (action === 'include-renal') changeScenario(workspace.state.scenarioId === 'renal-revision' ? 'original' : 'renal-revision');
       if (action === 'revision') changeScenario(workspace.state.scenarioId === 'original' ? 'renal-revision' : 'original');
@@ -344,6 +363,7 @@ export function mountStudio() {
         evaluateScratch();
         if (draftEvaluation.valid) {
           const added = workspace.addProfile(profileDraft);
+          scene.focusPatient(added.id);
           profileDialog.close(); profileDraft = {}; draftEvaluation = null;
           announce(`${added.id} added explicitly. ${workspace.run.current.total} synthetic records in ${workspace.run.datasetVersion}.`);
         }
@@ -404,6 +424,7 @@ export function mountStudio() {
   evidenceDialog.addEventListener('close', () => workspace.setEvidence(null));
   profileDialog.addEventListener('close', () => clearTimeout(profileTimer));
   motion.addEventListener('change', render);
+  compactViewport.addEventListener('change', render);
   const route = () => {
     const hash = location.hash.slice(1);
     if (['patient', 'trial', 'decision'].includes(hash)) navigate(hash, false);

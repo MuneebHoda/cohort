@@ -71,5 +71,6 @@
   --motion-feedback: 140ms;
   --motion-panel: 220ms;
   --motion-population: 680ms;
+  --motion-focus: 450ms;
   --motion-ease: cubic-bezier(.2,.75,.25,1);
 }

@@ -4,7 +4,7 @@ A frontend-only synthetic trial-review studio with connected Patient Review, Tri
 
 ## Run
 
-Node.js 18 or newer. The only runtime library is locally installed, pinned Three.js 0.187.0. No API keys, remote assets, model service, or backend are required.
+Node.js 18 or newer. Runtime libraries are locally installed, pinned Three.js 0.187.0 and free Motion 14.14.0. No API keys, remote assets, model service, or backend are required.
 
 ```sh
 npm ci
@@ -15,11 +15,11 @@ npm test
 npm run build
 ```
 
-`dist/` is the static build, including local Three.js modules and its MIT license. Serve it at a site's root. To use a different local port: `PORT=5174 npm run dev`. State and events are held in this browser tab: perspective changes preserve the run, selection, filters and working dataset. Reload clears the session. Reset restores the selected dataset's immutable baseline (500 or 20), removes its working additions, and retains the current perspective, other dataset working copy and actual session history.
+`dist/` is the static build, including local Three.js/Motion bundles and their MIT licenses. Serve it at a site's root. To use a different local port: `PORT=5174 npm run dev`. State and events are held in this browser tab: perspective changes preserve the run, selection, filters and working dataset. Reload clears the session. Reset restores the selected dataset's immutable baseline (500 or 20), removes its working additions, and retains the current perspective, other dataset working copy and actual session history.
 
 ## Three-minute demonstration
 
-1. Patient Review opens **Expanded cohort — 500 synthetic patients**. Select **Proposed renal**, then **Newly matching**. The paginated queue includes all 80 new matches; 78 have complete attention-index inputs, while two remain unscored. All 500 records remain in the 3D scene, with filtered records dimmed.
+1. Patient Review opens **Expanded cohort — 500 synthetic patients**. Select **Proposed renal**, then **Newly matching**. The paginated queue includes all 80 new matches; 78 have complete attention-index inputs, while two remain unscored. The population overview explicitly aggregates all 500 records into four classification trays. Select a tray to unfold up to 24 patient tiles on desktop/laptop or 12 on a phone; exact ranges and paging keep every record accessible. Tray focus does not change analysis filters or counts.
 2. Select SYN-0005. Compare the original renal exclusion and proposed result, inspect every criterion and factor, then open its fictional renal evidence. A generated stability flag and one dated measurement do not establish longitudinal stability.
 3. Open **Next review** and record a clinical-review flag, information request, retained restriction or reviewer note with a rationale. These actual annotations do not change eligibility or approve inclusion.
 4. Open **Trial Strategy**. Compare 153/500 with 233/500, then inspect Age, Sex, Gender, Race, Ethnicity or Site. Click a category and open its exact patients. Whole-cohort denominators remain fixed; active filters appear as removable chips.
@@ -62,7 +62,11 @@ Clinical profile counts: preserved function 117, controlled metabolic 124, renal
 
 `src/tokens.css` is the authoritative color, radius, control-size and motion layer. Light reading surfaces use one teal theme; the population stage uses dark navy. Existing matches use slate blue, new matches teal, exclusions coral and indeterminate records amber, paired with labels and symbols. Categorical composition colors carry no clinical valence. Text variants meet AA contrast in their tested pairings.
 
-`src/motion.js` shares transform/opacity panel transitions with CSS feedback timing and the Three.js population transition. The installed Motion skill informed this native-stack implementation; no Motion package or new framework is introduced. Motion MCP was not connected during this pass. Reduced motion skips transitions. Instanced geometry renders all 500 patients in 4 draw calls originally / 5 proposed (including selection), with at most 2 DOM labels in the dense scene. Rendering settles when idle and pauses when hidden. Placement is illustrative and carries no quantitative risk meaning.
+`src/motion.js` shares timing with the Three.js stage and uses the locally served free Motion runtime for interruptible 450ms tray/camera transitions. Existing panel transitions remain 220ms; feedback 140ms; actual scenario-transfer summaries 680ms. Motion MCP was not connected during this pass; the installed skill and current official documentation informed the implementation. Reduced motion commits final positions immediately, and a missing animation bundle leaves the stage functional without animated transitions.
+
+The 3D stage uses four sculpted classification trays with exact counts instead of hundreds of tiny dots. This is explicitly a grouped overview, not one visible patient marker per loaded record. Focused inspection draws only the labelled patient page, in three instanced draw calls, with at most 24 patient controls. The complete registry and table retain every loaded ID. Page capacity responds to the actual container, preserving 44px targets and 12px gaps. New matches follow the established ranking; other groups use natural ID order. Whole-group, filter-matching, page and loaded denominators stay distinct. Table selection locates the exact tray/page; dataset changes and Reset return to overview. Scenario changes preserve the chosen group and explain a selected patient's move, with an explicit Locate control. On phones, Explore population jumps past the queue; patient inspection returns to the same tray.
+
+Rendering settles when idle and pauses when hidden. 2D mode and automatic WebGL fallback retain the same grouped navigation, complete paging and keyboard controls. Positions, tray sizes and elevation carry no quantitative clinical risk meaning.
 
 ## Architecture and main functions
 
@@ -80,7 +84,8 @@ Clinical profile counts: preserved function 117, controlled metabolic 124, renal
 - `tests/showcase.test.js` / `tests/theme.test.js`: generator coherence, identities/dates, demographic independence, reconciliation, linked reports/tools, selected-dataset Reset and token contrast.
 - `src/studio.js` / `src/studio.css`: persistent shell, connected perspective controls, evidence/profile/tool dialogs, keyboard/focus continuity, responsive and print flow.
 - `src/studio-patient.js` / `src/studio-patient.css`: patient queue, original/proposed criteria, factor contributions, evidence applicability, next review and structured synthetic-profile form.
-- `src/constellation.js` / `src/constellation.css`: one locally rendered WebGL scene, deterministic categorical layout, record picking, geometry transitions, idle pause, and equivalent 2D fallback. Layout has no quantitative spatial or risk meaning.
+- `src/population-layout.js`: deterministic clinical group registry, ranked/filtered group membership, accessible page capacity and actual scenario-transfer summaries.
+- `src/population-stage.js` / `src/constellation.css`: layered overview trays, paged patient tiles, exact picking, keyboard navigation, patient location, Motion transitions, idle pause and equivalent 2D fallback. `src/constellation.js` preserves the scene entry point.
 - `src/studio-views.js`: trial composition, source-to-decision trace, current-state review packet and JSON export. `src/study-tools.js` preserves the original study/criterion/boundary tools.
 - `tests/cohort.test.js`: deterministic examples, boundaries, adversarial evidence/config cases, provenance and reproducibility checks, and exhaustive condition combinations.
 - `tests/ranking.test.js`: exact index/ranking regressions, ties, cap and configuration changes, missing context, profiles, review steps, and eligibility separation.
@@ -147,10 +152,11 @@ The supplied raw JSON has no longitudinal renal-stability field. The pre-existin
 
 ## Verification and limits
 
-`npm test`: **107 passed, 0 failed**, retaining the reference engine/ranking regressions and 1,260 exhaustive condition combinations. Coverage includes determinism, types/categories/units/dates, coherent cardiac states, missingness, independent demographic streams, unique IDs, all 500 scene/table identities, complete candidate ranking, filter/chart/report reconciliation, actual review actions, boundary-tool filters, scratch isolation, dataset-specific Reset, separate challenge cases and contrast. `npm run check` syntax-checks every source module; `npm run build` creates the static bundle. No separate lint task is configured.
+`npm test`: **114 passed, 0 failed**, retaining the reference engine/ranking regressions and 1,260 exhaustive condition combinations. Coverage includes determinism, types/categories/units/dates, coherent cardiac states, missingness, independent demographic streams, unique IDs, all 500 group/table identities, complete candidate ranking, exhaustive focused-page coverage, responsive patient location, filter/chart/report reconciliation, actual review actions, boundary-tool filters, scratch isolation, dataset-specific Reset, separate challenge cases and contrast. `npm run check` syntax-checks every source module; `npm run build` creates the static bundle. No separate lint task is configured.
 
-Chrome 157 verification used 1440×900 desktop, 1280×800 laptop and 375×812 mobile in this pass. Actual canvas instance picking, 80-candidate pagination, demographic chart→table linking, all three perspectives and decision trace, evidence drawers, required annotation reasons, real annotation history, 20/500 switching, exact reference ranking, scenario reversal, scratch → explicit 501 addition → 500 Reset, keyboard tabs/2D focus, reduced motion, idle/hidden rendering, automatic no-WebGL 500 fallback, JSON export and A4 print/PDF were checked. Screenshots and exported QA artifacts are under ignored `output/playwright/`. Automated contrast checks cover intended token pairings; this is not a full accessibility certification or cross-browser/device benchmark.
+Chrome 157 tray verification used 1440×900 desktop, 1280×800 laptop and 375×812 mobile. It checked initial WebGL startup, actual canvas picking, all 312 original exclusions and 80 new-match pages without omissions, ranked ordering, demographic intersections, restoration of DOM/keyboard order, exact reference ranking, scenario reversal, zero groups, 20/500 switching and Reset, table→tray location, responsive 24/12 tile pages, 44px targets, phone jump/return paths, interrupted Motion, reduced motion, idle/hidden rendering, manual 2D, automatic no-WebGL fallback and a missing Motion bundle. The static build was checked independently of the development server. Existing report, scratch-profile and clinical regressions remain covered by the test suite. Screenshots and QA artifacts are under ignored `output/playwright/`. This is not a full accessibility certification or cross-browser/device benchmark.
 
-Three.js is MIT-licensed; its license ships in `dist/vendor/LICENSE`. All scene geometry is generated locally. There are no remote models, fonts or other licensed visual assets on the critical path.
+
+Three.js and Motion are MIT-licensed; their licenses ship in `dist/vendor/LICENSE` and `dist/vendor/MOTION-LICENSE.md`. All scene geometry is generated locally. There are no remote models, fonts or other licensed visual assets on the critical path.
 
 No real clinical validation, adverse-event prediction, live model activity, real patient data, or independent enrollment approval is provided. Qualified medical and regulatory review is required for any real-world use.

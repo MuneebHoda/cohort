@@ -882,3 +882,10 @@ body.studio-body {
 .studio-report .report-ranking th:last-child{width:58%}
 .sp-queue-scroll{overflow-anchor:none}
 @media print{#print-root .studio-report table{break-inside:auto}}
+.population-stage-column .constellation-header{padding:14px 16px 8px}
+.population-stage-column .constellation-context,.population-stage-column .constellation-reading,.population-stage-column .constellation-foot{padding-left:16px;padding-right:16px}
+.population-stage-column .constellation-reading{display:flex;min-height:44px;padding-top:7px;padding-bottom:7px}
+.population-stage-column:has(.constellation.is-focused) .scene-story{display:none}
+@media(min-width:1101px){.population-stage-column .constellation-viewport{min-height:270px;height:clamp(270px,calc(100dvh - 610px),400px)}.population-stage-column .scene-story{padding:8px 16px}.constellation-foot>span:first-child{display:none}}
+.mobile-population-jump,.constellation-table-link{display:none}
+@media(max-width:900px){.mobile-population-jump{display:flex;margin:0 0 14px;min-height:44px;width:100%;justify-content:space-between}.mobile-detail-open .mobile-population-jump{display:none}.constellation-table-link{display:inline-flex;align-items:center;min-height:44px;min-width:44px;padding:7px 10px;border:1px solid var(--stage-border);border-radius:var(--radius-sm);color:var(--stage-text);background:var(--stage-raised);font-size:12px}.constellation-foot{align-items:center}}
