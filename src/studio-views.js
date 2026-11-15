@@ -23,6 +23,26 @@ export function renderContext(run, state) {
   return `<div class="context-data"><label class="dataset-select-label" for="dataset-selector">Dataset<select id="dataset-selector">${Object.values(datasetDefinitions).map(dataset => `<option value="${dataset.id}" ${state.dataset === dataset.id ? 'selected' : ''}>${e(dataset.label)}</option>`).join('')}</select></label><span class="context-records"><strong>${run.current.total} loaded</strong><small>${e(run.id)}</small></span><button class="dataset-provenance" data-action="assumptions">${e(run.dataset.configVersion)}${run.dataset.seed !== null ? ` · seed ${run.dataset.seed}` : ' · supplied fixture'} ${icon('info')}</button></div><div class="context-filters"><span>${activeFilters.length ? `${visible.length} of ${run.current.total} shown` : `Whole cohort · ${run.current.total} records`}</span>${activeFilters.map(([key,label]) => `<button class="active-filter-chip" data-clear-filter="${key}" aria-label="Clear ${e(label)}">${e(label)} ×</button>`).join('')}${activeFilters.length > 1 ? '<button data-action="clear-filters">Clear all</button>' : ''}</div>`;
 }
 
+export function renderCasePeopleControls(run, state) {
+  if (!run.casePack) return '';
+  const people = visibleRecords(run, state.filters);
+  const statuses = [['all', 'All medical results'], ['eligible', 'Meets modeled rules'], ['excluded', 'Excluded'], ['indeterminate', 'Indeterminate']];
+  if (run.proposed.available || ['new', 'changed'].includes(state.filters.status)) statuses.push(['new', 'Newly matching'], ['changed', 'Classification changed']);
+  const routes = run.investigationSummary.routes;
+  const linkedGroup = run.chartGroups.find(group => group.id === state.filters.subgroup);
+  const selectedVisible = people.some(record => record.id === state.selectedPatientId);
+  return `<section class="case-people-picker" aria-labelledby="case-people-heading">
+    <div class="case-people-heading"><h2 id="case-people-heading">Choose people to inspect</h2><span role="status">${people.length} of ${run.current.total} people in view</span></div>
+    <div class="case-people-fields">
+      <label for="case-status-filter">Medical result<select id="case-status-filter" data-case-status>${statuses.map(([id,label]) => `<option value="${id}" ${state.filters.status === id ? 'selected' : ''}>${e(label)} · ${visibleRecords(run, {...state.filters, status:id}).length}</option>`).join('')}</select></label>
+      <label for="case-route-picker">Review pathway<select id="case-route-picker" data-filter-route><option value="all" ${state.filters.subgroup === 'all' ? 'selected' : ''}>All review pathways · ${visibleRecords(run, {...state.filters, subgroup:'all'}).length}</option>${linkedGroup ? `<option value="${e(linkedGroup.id)}" selected>${e(linkedGroup.label)} · ${people.length}</option>` : ''}${routes.map(route => `<option value="${e(route.id)}" ${state.filters.subgroup === route.id ? 'selected' : ''}>${e(route.label)} · ${visibleRecords(run, {...state.filters, subgroup:route.id}).length}</option>`).join('')}</select></label>
+      <label for="case-patient-picker">Patient<select id="case-patient-picker" data-case-patient ${people.length ? '' : 'disabled'}><option value="" ${selectedVisible ? '' : 'selected'} disabled>${people.length ? 'Choose a patient in this group' : 'No people match these filters'}</option>${people.map(record => `<option value="${e(record.id)}" ${state.selectedPatientId === record.id ? 'selected' : ''}>${e(record.id)} · ${e(statusLabel[record.status])}</option>`).join('')}</select></label>
+      <button id="case-show-people" class="studio-button primary" data-action="inspect-filtered" aria-haspopup="dialog" aria-controls="patient-queue-dialog" ${people.length ? '' : 'disabled'}>${icon('people')} Show ${people.length} ${people.length === 1 ? 'person' : 'people'} ${icon('arrow')}</button>
+    </div>
+    <p>Filters update the population and patient list. Review pathways can overlap; selecting people does not change eligibility.${people.length ? '' : ' Clear filters to see all people.'} ${Object.entries(state.filters).some(([key,value]) => value !== (key === 'query' ? '' : 'all')) ? '<button data-action="clear-filters">Clear filters</button>' : ''}</p>
+  </section>`;
+}
+
 export function renderSceneStory(run) {
   const newly = run.current.records.filter(record => record.newlyEligible);
   const uncertain = run.current.records.filter(record => record.statusChanged && record.status === 'indeterminate');

@@ -936,3 +936,17 @@ body.studio-body {
 .sp-outcomes.case-outcomes>.case-outcome-excluded{background:var(--status-excluded-subtle)}.sp-outcomes.case-outcomes>.case-outcome-indeterminate{background:var(--status-indeterminate-subtle)}.sp-outcomes.case-outcomes>.case-outcome-eligible{background:var(--status-existing-subtle)}
 .case-proposed-status{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 18px;border-top:1px solid var(--border);font-size:12px}.case-proposed-status>span:first-child,.case-proposed-status>small{width:100%;font-size:11px;color:var(--text-secondary)}
 .case-source-content code{overflow-wrap:anywhere;word-break:break-all}
+
+/* Shared case-pack selectors follow the existing population and patient filters. */
+#patient-people-slot:has(.case-people-picker){margin-bottom:14px}
+.case-people-picker{border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface);padding:17px 19px;min-width:0}
+.case-people-heading{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px 16px;margin-bottom:12px}
+.case-people-heading h2{font:500 17px/1.4 var(--sans);letter-spacing:-.025em;margin:0}.case-people-heading>span{font-size:11px;color:var(--text-secondary)}
+.case-people-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,1fr) auto;gap:12px;align-items:end}
+.case-people-fields label{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:11px;color:var(--text-secondary)}
+.case-people-fields select{width:100%;min-width:0;min-height:44px;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font:12px var(--sans)}
+.case-people-fields>.studio-button{min-height:44px;justify-content:center;white-space:nowrap}.case-people-fields :disabled{opacity:.55;cursor:default}
+.case-people-picker>p{font-size:11px;line-height:1.65;color:var(--text-secondary);margin:10px 0 0}.case-people-picker>p button{color:var(--accent-hover);text-decoration:underline;min-height:32px;padding:0 7px}
+#patient-people-slot:empty,#trial-people-slot:empty,#decision-people-slot:empty,#patient-people-slot:has(>[hidden]),#trial-people-slot:has(>[hidden]),#decision-people-slot:has(>[hidden]){display:none}#trial-people-slot:has(.case-people-picker),#decision-people-slot:has(.case-people-picker){margin-bottom:20px}
+@media(max-width:1250px){.case-people-fields{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.case-people-fields select{font-size:13px}}
+@media(max-width:600px){.case-people-picker{padding:16px 14px}.case-people-fields{grid-template-columns:minmax(0,1fr);gap:13px}.case-people-fields select{font-size:16px}.case-people-heading h2{font-size:18px}.case-people-picker>p{font-size:12px}.case-people-picker>p button{min-height:44px}.case-people-fields label{font-size:12px}}
