@@ -43,6 +43,7 @@
   --scrim: #10232D77;
   --shadow-color: #10232D12;
   --stage-zone: #18333D66;
+  --stage-shadow: #081319;
   --paper: var(--app-background);
   --white: var(--surface);
   --ink: var(--text-primary);
@@ -71,6 +72,6 @@
   --motion-feedback: 140ms;
   --motion-panel: 220ms;
   --motion-population: 680ms;
-  --motion-focus: 450ms;
+  --motion-focus: 600ms;
   --motion-ease: cubic-bezier(.2,.75,.25,1);
 }

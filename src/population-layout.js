@@ -16,10 +16,24 @@ export function getMarkerLayout(records = []) {
   });
 }
 
-export function getFocusPageLayout(width, height) {
-  const columns = Math.max(1, Math.min(6, Math.floor((width - 12) / 92)));
-  const rows = Math.max(1, Math.min(4, Math.floor((height - 36) / 56)));
-  return { columns, rows, capacity: columns * rows, tileWidth: 80, tileHeight: 44, gap: 12 };
+export function getFocusPageLayout(width) {
+  const columns = Math.max(1, Math.min(6, Math.floor((width - 16) / 100)));
+  return { columns, rows: 1, capacity: columns, targetWidth: 84, targetHeight: 84, gap: 16 };
+}
+
+export function getRingSegments(groups, gap = Math.PI / 72) {
+  const total = groups.reduce((sum, group) => sum + group.total, 0);
+  const nonempty = groups.filter(group => group.total > 0).length;
+  const separator = nonempty > 1 ? gap : 0;
+  const available = Math.PI * 2 - nonempty * separator;
+  let cursor = -Math.PI / 2;
+  return groups.map(group => {
+    const fraction = total ? group.total / total : 0;
+    const span = available * fraction;
+    const result = { ...group, fraction, matchingFraction: group.total ? group.records.length / group.total : 0, start: cursor, end: cursor + span, span, gap: group.total ? separator : 0 };
+    if (group.total) cursor += span + separator;
+    return result;
+  });
 }
 
 export function getPopulationGroups(run, visibleIds = run.current.records.map(record => record.id)) {

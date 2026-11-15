@@ -1,8 +1,8 @@
 const active = new WeakMap();
 export function motionSettings() {
-  if (typeof document === 'undefined') return { panel: 220, feedback: 140, population: 680, focus: 450, ease: 'cubic-bezier(.2,.75,.25,1)' };
+  if (typeof document === 'undefined') return { panel: 220, feedback: 140, population: 680, focus: 600, ease: 'cubic-bezier(.2,.75,.25,1)' };
   const tokens = getComputedStyle(document.documentElement);
-  return { panel: parseFloat(tokens.getPropertyValue('--motion-panel')) || 220, feedback: parseFloat(tokens.getPropertyValue('--motion-feedback')) || 140, population: parseFloat(tokens.getPropertyValue('--motion-population')) || 680, focus: parseFloat(tokens.getPropertyValue('--motion-focus')) || 450, ease: tokens.getPropertyValue('--motion-ease').trim() };
+  return { panel: parseFloat(tokens.getPropertyValue('--motion-panel')) || 220, feedback: parseFloat(tokens.getPropertyValue('--motion-feedback')) || 140, population: parseFloat(tokens.getPropertyValue('--motion-population')) || 680, focus: parseFloat(tokens.getPropertyValue('--motion-focus')) || 600, ease: tokens.getPropertyValue('--motion-ease').trim() };
 }
 
 export function createStageTransition(onUpdate, onComplete) {

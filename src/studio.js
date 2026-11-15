@@ -1,7 +1,7 @@
 import { product, study, sources, clinicalConfig } from './data.js';
 import { demoCase } from './clinical-fixture.js';
 import { getReviewProfile } from './ranking.js';
-import { createWorkspace, visibleRecords, evaluateDraft, datasetDefinitions } from './workspace.js';
+import { createWorkspace, visibleRecords, evaluateDraft, datasetDefinitions, queuePageSize } from './workspace.js';
 import { transitionPanel } from './motion.js';
 import { renderAssumptions } from './inspection.js';
 import { renderPatientQueue, renderPatientDetail, renderProfileForm } from './studio-patient.js';
@@ -16,6 +16,9 @@ export function mountStudio() {
   const evidenceDialog = document.querySelector('#evidence-dialog');
   const toolDialog = document.querySelector('#tool-dialog');
   const profileDialog = document.querySelector('#profile-dialog');
+  const queueDialog = document.querySelector('#patient-queue-dialog');
+  let queueRestoreFocus = true;
+  let queueOpenerId = 'patients-toggle';
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   let tool = null;
   let toolCriterion = 'renal';
@@ -37,13 +40,14 @@ export function mountStudio() {
   document.body.classList.add('studio-body');
   document.title = 'Cohort — Live Trial Review Studio';
   document.querySelector('meta[name="theme-color"]').content = getComputedStyle(document.documentElement).getPropertyValue('--app-background').trim();
-  app.innerHTML = `<header class="studio-header"><a class="studio-brand" href="#patient" aria-label="Cohort patient review"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="16" cy="15" r="8"/><circle cx="25" cy="15" r="8"/><circle cx="20.5" cy="23" r="8"/></svg><span>${e(product.wordmark)}</span></a><div class="studio-study"><span>CLINICAL DEVELOPMENT / ${e(study.phase).toUpperCase()}</span><h1>${e(study.drug)} <span>${e(study.title.replace(study.drug, '').trim())}</span></h1></div><span class="synthetic-pill">${icon('flask')} Synthetic demonstration</span><div class="studio-header-actions"><button class="studio-icon-button" data-action="guide" aria-label="Open demonstration guide" title="Demonstration guide">${icon('book')}</button><button class="studio-reset" data-action="reset">${icon('reset')}<span>Reset dataset</span></button></div></header>
+  app.innerHTML = `<header class="studio-header"><a class="studio-brand" href="#patient" aria-label="Cohort patient review"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="16" cy="15" r="8"/><circle cx="25" cy="15" r="8"/><circle cx="20.5" cy="23" r="8"/></svg><span>${e(product.wordmark)}</span></a><div class="studio-study"><span>CLINICAL DEVELOPMENT / ${e(study.phase).toUpperCase()}</span><h1>${e(study.drug)} <span>${e(study.title.replace(study.drug, '').trim())}</span></h1></div><span class="synthetic-pill">${icon('flask')} Synthetic demonstration</span><div class="studio-header-actions"><button id="patients-toggle" class="studio-button patients-toggle" data-action="open-queue" aria-haspopup="dialog" aria-controls="patient-queue-dialog">${icon('people')}<span>Patients</span><strong></strong></button><button class="studio-icon-button" data-action="guide" aria-label="Open demonstration guide" title="Demonstration guide">${icon('book')}</button><button class="studio-reset" data-action="reset">${icon('reset')}<span>Reset dataset</span></button></div></header>
     <div class="studio-navigation"><nav aria-label="Workspace perspectives" id="perspective-tabs"></nav><div id="scenario-controls"></div><details class="study-tools-menu"><summary>${icon('file')}<span>Study tools</span>${icon('chevron')}</summary><div><button data-tool="protocol">Study protocol</button><button data-tool="criteria">Criterion review desk</button><button data-tool="population">Boundary explorer</button><button data-action="report">Current review packet</button><button data-action="guide">Demonstration guide</button></div></details></div>
     <div id="workspace-context" class="workspace-context"></div>
-    <main id="main" tabindex="-1" class="studio-main"><section id="patient-perspective" aria-label="Patient Review"><button class="mobile-population-jump studio-button" data-action="population-jump">Explore population ↘</button><div class="patient-studio-layout"><aside id="patient-queue" class="patient-queue-region"></aside><div class="population-stage-column"><div id="patient-scene-slot"></div><section id="scene-story" class="scene-story"></section><div class="stage-reading-note">${icon('shield')} Explicit rules. Traceable evidence. Expert review required.</div></div><div class="patient-detail-region"><button class="mobile-back" data-action="back-to-queue">← Back to patient queue</button><div id="patient-detail"></div></div></div></section>
-    <section id="trial-perspective" aria-label="Trial Strategy" hidden><div id="trial-summary"></div><div class="trial-studio-layout"><div class="trial-population-column"><div id="trial-scene-slot"></div><section class="trial-linked-selection studio-sheet"><span class="studio-eyebrow">ONE CONNECTED ANALYSIS</span><h3>The same patients, in context.</h3><p>Age and clinical subgroup selections filter the population and patient table together. Whole-cohort counts remain explicit.</p><div id="trial-selection"></div><button class="studio-button" data-perspective="patient">${icon('people')} Open synchronized patient table ${icon('arrow')}</button></section></div><div id="trial-analytics"></div></div></section>
+    <main id="main" tabindex="-1" class="studio-main"><section id="patient-perspective" aria-label="Patient Review"><button class="mobile-population-jump studio-button" data-action="population-jump">Explore population ↘</button><div class="patient-studio-layout"><div class="population-stage-column"><div id="patient-scene-slot"></div><section id="scene-story" class="scene-story"></section><div class="stage-reading-note">${icon('shield')} Explicit rules. Traceable evidence. Expert review required.</div></div><div class="patient-detail-region"><button class="mobile-back" data-action="back-to-queue">← Back to patient queue</button><div id="patient-detail"></div></div></div></section>
+    <section id="trial-perspective" aria-label="Trial Strategy" hidden><div id="trial-summary"></div><div class="trial-studio-layout"><div class="trial-population-column"><div id="trial-scene-slot"></div><section class="trial-linked-selection studio-sheet"><span class="studio-eyebrow">ONE CONNECTED ANALYSIS</span><h3>The same patients, in context.</h3><p>Age and clinical subgroup selections filter the population and patient table together. Whole-cohort counts remain explicit.</p><div id="trial-selection"></div><button class="studio-button" data-action="patient-table-jump">${icon('people')} Open synchronized patient table ${icon('arrow')}</button></section></div><div id="trial-analytics"></div></div></section>
     <section id="decision-perspective" aria-label="Decision Review" hidden><div id="decision-content"></div></section></main>
     <footer class="studio-footer"><span>FICTIONAL STUDY · SYNTHETIC RECORDS · LOCAL CALCULATIONS</span><span>The index is unvalidated. Modeled matching is not enrollment approval.</span></footer>`;
+  queueDialog.innerHTML = `<header class="queue-drawer-header"><div><span class="studio-eyebrow">SYNTHETIC RECORDS</span><h2 id="queue-title">Patient explorer</h2></div><button class="studio-icon-button" data-action="close-queue" aria-label="Close patient explorer">${icon('close')}</button></header><div id="patient-queue" class="patient-queue-region"></div>`;
   const sceneHost = document.createElement('div');
   sceneHost.className = 'constellation-host';
   document.querySelector('#patient-scene-slot').append(sceneHost);
@@ -110,6 +114,8 @@ export function mountStudio() {
     patch('scenario-controls', `<div class="scenario-segmented" aria-label="Active protocol scenario"><button data-scenario="original" aria-pressed="${state.scenarioId === 'original'}" class="${state.scenarioId === 'original' ? 'active' : ''}">Original</button><button data-scenario="renal-revision" aria-pressed="${state.scenarioId === 'renal-revision'}" class="${state.scenarioId === 'renal-revision' ? 'active proposed' : ''}">Proposed <span>renal</span></button></div><details class="scenario-advanced"><summary aria-label="Inspect evidence-gated scenario options" title="Scenario options">${icon('layers')}</summary><div><label for="scenario-options">Predefined scenario</label><select id="scenario-options"><option value="original" ${state.scenarioId === 'original' ? 'selected' : ''}>Original protocol</option>${clinicalConfig.scenarios.map(s => `<option value="${e(s.id)}" ${state.scenarioId === s.id ? 'selected' : ''}>${e(s.label)} · ${e(s.status)}</option>`).join('')}</select><strong>${e(run.current.gate.active ? 'Applied to synthetic comparison' : run.current.gate.requested ? 'Withheld · original rules retained' : 'Original rules active')}</strong><p>${e(run.current.gate.reasons.join(' ') || 'No revision is currently applied. Proposed rules require explicit registered support and synthetic-demonstration approval.')}</p><small>Approval here applies only to this synthetic demo.</small></div></details>`);
     patch('workspace-context', renderContext(run, state));
     for (const name of ['patient', 'trial', 'decision']) document.getElementById(`${name}-perspective`).hidden = state.perspective !== name;
+    document.querySelector('#patients-toggle strong').textContent = run.current.total;
+    document.querySelector('#patients-toggle').setAttribute('aria-label', `Open patient explorer, ${run.current.total} synthetic records`);
     patch('patient-queue', renderPatientQueue({ state, run, escape: e, icon }));
     const visible = visibleRecords(run, state.filters);
     const selectedIndex = visible.findIndex(r => r.id === state.selectedPatientId);
@@ -149,16 +155,36 @@ export function mountStudio() {
   }
 
   function selectPatient(id, origin = 'table') {
+    const fromQueue = queueDialog.open;
+    closeQueue(false);
+    if (fromQueue && workspace.state.perspective !== 'patient') navigate('patient');
     scene.focusPatient(id);
     const unchanged = workspace.state.selectedPatientId === id;
-    if (compactViewport.matches && workspace.state.perspective === 'patient') { mobileDetailOpen = true; mobileReturnToStage = origin === 'scene'; }
+    if (compactViewport.matches && workspace.state.perspective === 'patient') { mobileDetailOpen = true; if (origin !== 'detail') mobileReturnToStage = origin === 'scene'; }
     workspace.selectPatient(id);
     // The same selected patient can still open the compact-screen detail.
     if (unchanged) render();
-    if (mobileDetailOpen && workspace.state.perspective === 'patient') document.querySelector('#patient-detail h2, #patient-detail h3')?.focus({ preventScroll: true });
+    if (fromQueue || mobileDetailOpen && workspace.state.perspective === 'patient') requestAnimationFrame(() => {
+      document.querySelector('#selected-patient-heading')?.focus({ preventScroll: true });
+      if (mobileDetailOpen) document.querySelector('.patient-detail-region')?.scrollIntoView({ block: 'start', behavior: 'instant' });
+    });
+  }
+
+  function openQueue(opener = document.activeElement) {
+    queueOpenerId = opener?.id || 'patients-toggle';
+    queueRestoreFocus = true;
+    if (!queueDialog.open) queueDialog.showModal();
+    transitionPanel(queueDialog, 'drawer');
+    document.querySelector('#patient-search')?.focus({ preventScroll: true });
+  }
+
+  function closeQueue(restore = true) {
+    if (!queueDialog.open) return;
+    queueRestoreFocus = restore; queueDialog.close();
   }
 
   function navigate(perspective, updateUrl = true) {
+    closeQueue(false);
     const changed = workspace.state.perspective !== perspective;
     mobileDetailOpen = false;
     workspace.setPerspective(perspective);
@@ -170,6 +196,7 @@ export function mountStudio() {
 
   function changeDataset(id) {
     if (id === workspace.state.dataset) return;
+    closeQueue(false);
     mobileDetailOpen = false;
     workspace.setDataset(id);
     announce(`${workspace.events.at(-1).reason} ${workspace.run.current.total} loaded records; ${workspace.run.id}.`);
@@ -195,6 +222,7 @@ export function mountStudio() {
   }
 
   function showTool(name) {
+    closeQueue(false);
     tool = name;
     document.querySelector('.study-tools-menu').open = false;
     renderTool();
@@ -247,6 +275,7 @@ export function mountStudio() {
   }
 
   function showProfile() {
+    closeQueue(false);
     if (!profileDraft.id) {
       let index = 1;
       while (workspace.run.patients.some(r => r.id === `S${String(index).padStart(2, '0')}`)) index++;
@@ -258,6 +287,7 @@ export function mountStudio() {
   }
 
   function showGuide() {
+    closeQueue(false);
     tool = 'guide';
     renderedHtml.delete(toolDialog);
     document.querySelector('.study-tools-menu').open = false;
@@ -281,7 +311,7 @@ export function mountStudio() {
       if (button.dataset.source) { openEvidence(button.dataset.source); return; }
       if (button.dataset.perspective) { if (toolDialog.open) toolDialog.close(); navigate(button.dataset.perspective); return; }
       if (button.dataset.scenario) { changeScenario(button.dataset.scenario); return; }
-      if (button.dataset.inspectStatus) { workspace.setFilters({ status: button.dataset.inspectStatus, age: 'all', subgroup: 'all', query: '', demographic: 'all' }); const records = visibleRecords(workspace.run, workspace.state.filters); if (records.length) workspace.selectPatient(records[0].id); navigate('patient'); announce('Opened whole-cohort records; other filters cleared.'); return; }
+      if (button.dataset.inspectStatus) { workspace.setFilters({ status: button.dataset.inspectStatus, age: 'all', subgroup: 'all', query: '', demographic: 'all' }); const records = visibleRecords(workspace.run, workspace.state.filters); if (records.length) workspace.selectPatient(records[0].id); navigate('patient'); openQueue(document.querySelector('#patients-toggle')); announce('Opened whole-cohort records; other filters cleared.'); return; }
       if (button.dataset.queuePage !== undefined) { workspace.setQueuePage(Number(button.dataset.queuePage)); document.querySelector('.sp-queue-scroll')?.scrollTo({ top: 0 }); document.querySelector('.sp-queue-pagination button:not(:disabled)')?.focus({ preventScroll: true }); return; }
       if (button.dataset.composition) { workspace.setCompositionDimension(button.dataset.composition); transitionPanel(document.querySelector('.composition-rows')); return; }
       if (button.dataset.demographic) { workspace.setFilters({ demographic: workspace.state.filters.demographic === button.dataset.demographic ? 'all' : button.dataset.demographic }); return; }
@@ -290,7 +320,7 @@ export function mountStudio() {
       if (button.dataset.boundary) { toolState.boundary = button.dataset.boundary; renderTool(); return; }
       if (button.dataset.filter) { workspace.setFilters({ status: button.dataset.filter }); return; }
       if (button.dataset.dataset) { changeDataset(button.dataset.dataset); return; }
-      if (button.dataset.reviewMode) { if (button.dataset.reviewMode === 'ranked') { toolDialog.close(); navigate('patient'); } return; }
+      if (button.dataset.reviewMode) { if (button.dataset.reviewMode === 'ranked') { toolDialog.close(); navigate('patient'); openQueue(document.querySelector('#patients-toggle')); } return; }
       if (button.dataset.patient || button.dataset.record) { selectPatient(button.dataset.patient || button.dataset.record); return; }
       if (button.dataset.status) { workspace.setFilters({ status: button.dataset.status }); return; }
       if (button.dataset.age) { workspace.setFilters({ age: workspace.state.filters.age === button.dataset.age ? 'all' : button.dataset.age }); return; }
@@ -320,11 +350,13 @@ export function mountStudio() {
         return;
       }
       const action = button.dataset.action;
+      if (action === 'open-queue') openQueue(button);
+      if (action === 'close-queue') closeQueue();
       if (action === 'clear-filters') workspace.setFilters({ status: 'all', age: 'all', subgroup: 'all', query: '', demographic: 'all' });
       if (action === 'clear-filters-locate') { workspace.setFilters({ status: 'all', age: 'all', subgroup: 'all', query: '', demographic: 'all' }); scene.focusPatient(workspace.state.selectedPatientId); }
       if (action === 'dataset') changeDataset(workspace.state.dataset === 'casebook' ? 'expanded' : 'casebook');
       if (action === 'assumptions') showTool('assumptions');
-      if (action === 'inspect-filtered') { const records = visibleRecords(workspace.run, workspace.state.filters); if (records.length && !records.some(record => record.id === workspace.state.selectedPatientId)) workspace.selectPatient(records[0].id); navigate('patient'); }
+      if (action === 'inspect-filtered') { const records = visibleRecords(workspace.run, workspace.state.filters); if (records.length && !records.some(record => record.id === workspace.state.selectedPatientId)) workspace.selectPatient(records[0].id); navigate('patient'); openQueue(document.querySelector('#patients-toggle')); }
       if (action === 'profile') showProfile();
       if (action === 'close-profile') profileDialog.close();
       if (action === 'close-tool') toolDialog.close();
@@ -336,24 +368,25 @@ export function mountStudio() {
         const heading = target.querySelector('h3'); heading.setAttribute('tabindex', '-1'); heading.focus({ preventScroll: true });
       }
       if (action === 'patient-table-jump') {
-        mobileDetailOpen = false; navigate('patient'); document.getElementById('patient-queue').scrollIntoView({ block: 'start', behavior: 'instant' });
-        document.querySelector('#patient-search')?.focus({ preventScroll: true });
+        mobileDetailOpen = false; navigate('patient'); openQueue(document.querySelector('#patients-toggle'));
       }
       if (action === 'back-to-queue') {
         mobileDetailOpen = false; render();
         if (mobileReturnToStage) {
           const target = document.querySelector('.constellation'); target.scrollIntoView({ block: 'start', behavior: 'instant' });
-          document.querySelector(`[data-scene-patient="${workspace.state.selectedPatientId}"]`)?.focus({ preventScroll: true });
-        } else document.querySelector(`[data-patient="${workspace.state.selectedPatientId}"]`)?.focus({ preventScroll: true });
+          const selected = document.querySelector(`[data-scene-patient="${workspace.state.selectedPatientId}"]`);
+          selected?.focus({ preventScroll: true }); selected?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+        } else { openQueue(document.querySelector('#patients-toggle')); document.querySelector(`#patient-queue [data-patient="${workspace.state.selectedPatientId}"]`)?.focus({ preventScroll: true }); }
       }
       if (['previous-patient', 'next-patient', 'previous', 'next'].includes(action)) {
         const records = visibleRecords(workspace.run, workspace.state.filters);
         const index = records.findIndex(r => r.id === workspace.state.selectedPatientId);
         const target = records[index + (action.includes('previous') ? -1 : 1)];
-        if (target) selectPatient(target.id);
+        if (target) selectPatient(target.id, 'detail');
       }
       if (action === 'reset') {
         clearTimeout(profileTimer); profileDraft = {}; draftEvaluation = null; mobileDetailOpen = false;
+        closeQueue(false);
         for (const dialog of [evidenceDialog, toolDialog, profileDialog]) if (dialog.open) dialog.close();
         workspace.reset(); scene.showOverview(); history.replaceState({}, '', `#${workspace.state.perspective}`); announce(`Restored ${datasetDefinitions[workspace.state.dataset].shortLabel}: ${workspace.run.current.total} synthetic records and original protocol. Session history retained.`);
       }
@@ -414,13 +447,21 @@ export function mountStudio() {
       document.getElementById(`patient-tab-${tabs[next]}`)?.focus({ preventScroll: true });
       return;
     }
-    if (!event.target.closest('#patient-queue') || event.target.matches('input,select,textarea') || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    const patientButton = event.target.closest('#patient-queue [data-patient]');
+    if (!patientButton || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
     const records = visibleRecords(workspace.run, workspace.state.filters);
-    const index = records.findIndex(r => r.id === workspace.state.selectedPatientId);
+    const index = records.findIndex(r => r.id === patientButton.dataset.patient);
     const next = event.key === 'Home' ? 0 : event.key === 'End' ? records.length - 1 : Math.max(0, Math.min(records.length - 1, index + (event.key === 'ArrowDown' ? 1 : -1)));
-    if (records[next]) { event.preventDefault(); selectPatient(records[next].id); document.querySelector(`#patient-queue [data-patient="${records[next].id}"]`)?.focus({ preventScroll: true }); }
+    if (records[next]) {
+      event.preventDefault(); workspace.setQueuePage(Math.floor(next / queuePageSize));
+      const target = document.querySelector(`#patient-queue [data-patient="${records[next].id}"]`);
+      target?.focus({ preventScroll: true }); target?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+    }
   });
   for (const dialog of [evidenceDialog, toolDialog, profileDialog]) dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
+  queueDialog.addEventListener('click', event => { if (event.target === queueDialog) closeQueue(); });
+  queueDialog.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); closeQueue(); } });
+  queueDialog.addEventListener('close', () => { if (queueRestoreFocus) document.getElementById(queueOpenerId)?.focus({ preventScroll: true }); });
   evidenceDialog.addEventListener('close', () => workspace.setEvidence(null));
   profileDialog.addEventListener('close', () => clearTimeout(profileTimer));
   motion.addEventListener('change', render);
