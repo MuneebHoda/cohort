@@ -3,7 +3,8 @@ import { product, study, sources, clinicalConfig } from './data.js';
 import { demoCase } from './clinical-fixture.js';
 import { getReviewProfile } from './ranking.js';
 import { createWorkspace, visibleRecords, evaluateDraft, datasetDefinitions, queuePageSize } from './workspace.js';
-import { transitionPanel } from './motion.js';
+import { transitionPanel, transitionCharts } from './motion.js';
+import { renderPatientCharts, renderTrialCharts } from './charts.js';
 import { renderAssumptions } from './inspection.js';
 import { renderPatientQueue, renderPatientDetail, renderProfileForm } from './studio-patient.js';
 import { createConstellation } from './constellation.js';
@@ -44,8 +45,8 @@ export function mountStudio() {
   app.innerHTML = `<header class="studio-header"><a class="studio-brand" href="#patient" aria-label="Cohort patient review"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="16" cy="15" r="8"/><circle cx="25" cy="15" r="8"/><circle cx="20.5" cy="23" r="8"/></svg><span>${e(product.wordmark)}</span></a><div class="studio-study" id="active-study"><span>CLINICAL DEVELOPMENT / ${e(study.phase).toUpperCase()}</span><h1>${e(study.drug)} <span>${e(study.title.replace(study.drug, '').trim())}</span></h1></div><span class="synthetic-pill">${icon('flask')} Synthetic demonstration</span><div class="studio-header-actions"><button id="patients-toggle" class="studio-button patients-toggle" data-action="open-queue" aria-haspopup="dialog" aria-controls="patient-queue-dialog">${icon('people')}<span>Patients</span><strong></strong></button><button class="studio-icon-button" data-action="guide" aria-label="Open demonstration guide" title="Demonstration guide">${icon('book')}</button><button class="studio-reset" data-action="reset">${icon('reset')}<span>Reset dataset</span></button></div></header>
     <div class="studio-navigation"><nav aria-label="Workspace perspectives" id="perspective-tabs"></nav><div id="scenario-controls"></div><details class="study-tools-menu"><summary>${icon('file')}<span>Study tools</span>${icon('chevron')}</summary><div><button data-tool="protocol">Study protocol</button><button data-tool="criteria">Criterion review desk</button><button data-tool="population">Boundary explorer</button><button data-action="report">Current review packet</button><button data-action="guide">Demonstration guide</button></div></details></div>
     <div id="workspace-context" class="workspace-context"></div>
-    <main id="main" tabindex="-1" class="studio-main"><section id="patient-perspective" aria-label="Patient Review"><button class="mobile-population-jump studio-button" data-action="population-jump">Explore population ↘</button><div class="patient-studio-layout"><div class="population-stage-column"><div id="patient-scene-slot"></div><section id="scene-story" class="scene-story"></section><div class="stage-reading-note">${icon('shield')} Explicit rules. Traceable evidence. Expert review required.</div></div><div class="patient-detail-region"><button class="mobile-back" data-action="back-to-queue">← Back to patient queue</button><div id="patient-detail"></div></div></div></section>
-    <section id="trial-perspective" aria-label="Trial Strategy" hidden><div id="trial-summary"></div><div class="trial-studio-layout"><div class="trial-population-column"><div id="trial-scene-slot"></div><section class="trial-linked-selection studio-sheet"><span class="studio-eyebrow">ONE CONNECTED ANALYSIS</span><h3>The same patients, in context.</h3><p>Age and clinical subgroup selections filter the population and patient table together. Whole-cohort counts remain explicit.</p><div id="trial-selection"></div><button class="studio-button" data-action="patient-table-jump">${icon('people')} Open synchronized patient table ${icon('arrow')}</button></section></div><div id="trial-analytics"></div></div></section>
+    <main id="main" tabindex="-1" class="studio-main"><section id="patient-perspective" aria-label="Patient Review"><button class="mobile-population-jump studio-button" data-action="population-jump">Explore population ↘</button><div class="patient-studio-layout"><div class="population-stage-column"><div id="patient-scene-slot"></div><div id="cohort-charts" aria-label="Cohort visual insights"></div><section id="scene-story" class="scene-story"></section><div class="stage-reading-note">${icon('shield')} Explicit rules. Traceable evidence. Expert review required.</div></div><div class="patient-detail-region"><button class="mobile-back" data-action="back-to-queue">← Back to patient queue</button><div id="patient-detail"></div></div></div></section>
+    <section id="trial-perspective" aria-label="Trial Strategy" hidden><div id="trial-summary"></div><div id="trial-charts" aria-label="Trial visual analysis"></div><div class="trial-studio-layout"><div class="trial-population-column"><div id="trial-scene-slot"></div><section class="trial-linked-selection studio-sheet"><span class="studio-eyebrow">ONE CONNECTED ANALYSIS</span><h3>The same patients, in context.</h3><p>Age and clinical subgroup selections filter the population and patient table together. Whole-cohort counts remain explicit.</p><div id="trial-selection"></div><button class="studio-button" data-action="patient-table-jump">${icon('people')} Open synchronized patient table ${icon('arrow')}</button></section></div><div id="trial-analytics"></div></div></section>
     <section id="decision-perspective" aria-label="Decision Review" hidden><div id="decision-content"></div></section></main>
     <footer class="studio-footer"><span>FICTIONAL STUDY · SYNTHETIC RECORDS · LOCAL CALCULATIONS</span><span>The index is unvalidated. Modeled matching is not enrollment approval.</span></footer>`;
   queueDialog.innerHTML = `<header class="queue-drawer-header"><div><span class="studio-eyebrow">SYNTHETIC RECORDS</span><h2 id="queue-title">Patient explorer</h2></div><button class="studio-icon-button" data-action="close-queue" aria-label="Close patient explorer">${icon('close')}</button></header><div id="patient-queue" class="patient-queue-region"></div>`;
@@ -97,7 +98,8 @@ export function mountStudio() {
     }
     [...region.querySelectorAll('details')].forEach((el, i) => { if (openDetails.includes(i)) el.open = true; });
     restoreFocus(region, key, selection);
-    if (animate) transitionPanel(region);
+    if (animate === 'charts') transitionCharts(region);
+    else if (animate) transitionPanel(region);
   }
 
   function render() {
@@ -124,6 +126,8 @@ export function mountStudio() {
     const selectedIndex = visible.findIndex(r => r.id === state.selectedPatientId);
     patch('patient-detail', `<div class="patient-stepper"><span>${selectedIndex < 0 ? 'Selected record is outside current filters' : `${selectedIndex + 1} of ${visible.length} shown`}</span><div><button data-action="previous-patient" aria-label="Previous visible patient" ${selectedIndex <= 0 ? 'disabled' : ''}>←</button><button data-action="next-patient" aria-label="Next visible patient" ${selectedIndex < 0 || selectedIndex >= visible.length - 1 ? 'disabled' : ''}>→</button></div></div>${renderPatientDetail({ state, run, sources, config: clinicalConfig, escape: e, icon })}`, patientChanged || runChanged);
     if (patientChanged || previousDetailTab !== state.detailTab) document.querySelector('#patient-detail-content')?.scrollTo({ top: 0, behavior: 'instant' });
+    patch('cohort-charts', renderPatientCharts(run, state), runChanged ? 'charts' : false);
+    patch('trial-charts', renderTrialCharts(run, state), runChanged ? 'charts' : false);
     patch('scene-story', renderSceneStory(run), runChanged);
     patch('trial-summary', renderTrialSummary(run), runChanged);
     patch('trial-analytics', renderTrialAnalytics(run, state));
@@ -204,7 +208,7 @@ export function mountStudio() {
     closeQueue(false);
     mobileDetailOpen = false;
     workspace.setDataset(id);
-    announce(`${workspace.events.at(-1).reason} ${workspace.run.current.total} loaded records; ${workspace.run.id}.`);
+    announce(`${workspace.run.casePack?.id || workspace.run.dataset.shortLabel} loaded · ${workspace.run.current.total} synthetic records · ${workspace.run.id}.`);
   }
 
   function changeScenario(id) {
@@ -212,7 +216,7 @@ export function mountStudio() {
     workspace.setScenario(id);
     if (workspace.run.id !== prior) {
       const { current } = workspace.run;
-      announce(`${current.gate.active ? 'Proposed demonstration rule active' : current.gate.requested ? 'Revision withheld; original rules retained' : 'Original protocol restored'}. ${current.eligible} of ${current.total} meet modeled rules, ${current.excluded} excluded, ${current.indeterminate} indeterminate. ${current.newlyEligible} newly matching.`);
+      announce(`${current.gate.active ? 'Proposed scenario active' : current.gate.requested ? 'Revision withheld; original rules retained' : 'Original protocol restored'}. ${current.eligible}/${current.total} meet modeled rules · ${current.excluded} excluded · ${current.indeterminate} indeterminate · ${current.newlyEligible} newly matching.`);
     }
   }
 
@@ -448,6 +452,7 @@ export function mountStudio() {
     }
   });
   document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') app.classList.add('chart-tooltips-dismissed');
     if (event.target.matches('[role="tab"][data-detail-tab]') && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
       const tabs = ['overview', 'criteria', 'evidence', 'pathway'];
       const index = tabs.indexOf(event.target.dataset.detailTab);
@@ -467,13 +472,21 @@ export function mountStudio() {
       target?.focus({ preventScroll: true }); target?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
     }
   });
+  document.addEventListener('focusin', () => app.classList.remove('chart-tooltips-dismissed'));
+  document.addEventListener('pointerover', event => {
+    const control = event.target.closest('.criterion-chart-row, .patient-gate-cells>button');
+    if (control && !control.contains(event.relatedTarget)) app.classList.remove('chart-tooltips-dismissed');
+  });
   for (const dialog of [evidenceDialog, toolDialog, profileDialog]) dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
   queueDialog.addEventListener('click', event => { if (event.target === queueDialog) closeQueue(); });
   queueDialog.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); closeQueue(); } });
   queueDialog.addEventListener('close', () => { if (queueRestoreFocus) document.getElementById(queueOpenerId)?.focus({ preventScroll: true }); });
   evidenceDialog.addEventListener('close', () => workspace.setEvidence(null));
   profileDialog.addEventListener('close', () => clearTimeout(profileTimer));
-  motion.addEventListener('change', render);
+  motion.addEventListener('change', () => {
+    if (motion.matches) for (const id of ['cohort-charts', 'trial-charts']) transitionCharts(document.getElementById(id));
+    render();
+  });
   compactViewport.addEventListener('change', render);
   const route = () => {
     const hash = location.hash.slice(1);

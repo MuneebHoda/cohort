@@ -1,4 +1,16 @@
 const active = new WeakMap();
+const chartAnimations = new WeakMap();
+export function transitionCharts(element) {
+  const engine = globalThis.Motion;
+  if (!engine || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    chartAnimations.get(element)?.complete();
+    return;
+  }
+  chartAnimations.get(element)?.stop();
+  const cards = [...element.querySelectorAll('[data-chart-enter]')];
+  if (!cards.length) return;
+  chartAnimations.set(element, engine.animate(cards, { opacity: [.45, 1], transform: ['translateY(7px)', 'translateY(0px)'] }, { duration: motionSettings().panel / 1000, delay: engine.stagger(.035), ease: [.2, .75, .25, 1] }));
+}
 export function motionSettings() {
   if (typeof document === 'undefined') return { panel: 220, feedback: 140, population: 680, focus: 600, ease: 'cubic-bezier(.2,.75,.25,1)' };
   const tokens = getComputedStyle(document.documentElement);
