@@ -75,7 +75,7 @@ test('HIV vertical path shares one run, source, routes and original screening in
 });
 
 test('switching between SYN-217 and investigation contexts clears incompatible state', () => {
-  const w=createWorkspace();w.setScenario('renal-revision');w.setFilters({status:'new',subgroup:'renal-window'});w.setDataset('case-hiv');
+  const w=createWorkspace({dataset:'expanded'});w.setScenario('renal-revision');w.setFilters({status:'new',subgroup:'renal-window'});w.setDataset('case-hiv');
   assert.equal(w.state.scenarioId,'original');assert.equal(w.state.filters.status,'all');assert.equal(w.state.filters.subgroup,'all');assert.equal(w.run.ranked.length,0);
   assert.throws(()=>w.setScenario('renal-revision'),/configuration/);
   w.setFilters({subgroup:'PROTOCOL_REVISION_REVIEW'});w.setDataset('casebook');
@@ -211,7 +211,7 @@ test('all eight packs total 400 distinct people, no expected classifications are
 });
 
 test('all case screens, tables, composition, decision trace and reports use their active immutable snapshot', () => {
-  const w=createWorkspace();
+  const w=createWorkspace({dataset:'expanded'});
   for(const id of Object.keys(casePackDefinitions)) {
     w.setDataset(`case-${id.toLowerCase()}`);const run=w.run,events=w.events;
     assert.equal(w.state.selectedPatientId,`${id}-A`);

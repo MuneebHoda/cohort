@@ -1,3 +1,5 @@
+import { unifiedProtocol, unifiedStudy } from './unified-protocol.js';
+import { renderUnifiedDomain, renderUnifiedTool, renderUnifiedSource, renderUnifiedProfile } from './unified-views.js';
 import { renderVerifiedSource, renderCriterionInspection } from './review-views.js';
 import { guidanceSources } from './guidance-sources.js';
 import { investigationSources, renderCaseSource, renderCaseTool } from './investigation-views.js';
@@ -31,7 +33,7 @@ export function mountStudio() {
   let tool = null;
   let toolCriterion = 'renal';
   let traceStep = 'source';
-  let analysisView = 'eligibility';
+  let analysisView = 'matrix';
   let analysisDimension = 'age';
   let traceCriterion = 'RENAL';
   let evidenceView = null;
@@ -54,10 +56,10 @@ export function mountStudio() {
   document.title = 'Cohort — Live Trial Review Studio';
   document.querySelector('meta[name="theme-color"]').content = getComputedStyle(document.documentElement).getPropertyValue('--app-background').trim();
   app.innerHTML = `<header class="studio-header"><a class="studio-brand" href="#patient" aria-label="Cohort patient review"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="16" cy="15" r="8"/><circle cx="25" cy="15" r="8"/><circle cx="20.5" cy="23" r="8"/></svg><span>${e(product.wordmark)}</span></a><div class="studio-study" id="active-study"><span>CLINICAL DEVELOPMENT / ${e(study.phase).toUpperCase()}</span><h1>${e(study.drug)} <span>${e(study.title.replace(study.drug, '').trim())}</span></h1></div><span class="synthetic-pill">${icon('flask')} Synthetic demonstration</span><div class="studio-header-actions"><button id="presentation-launch" class="studio-button presentation-launch" aria-haspopup="dialog" aria-expanded="false">${icon('play')}<span>Presentation</span></button><button id="patients-toggle" class="studio-button patients-toggle" data-action="open-queue" aria-haspopup="dialog" aria-controls="patient-queue-dialog">${icon('people')}<span>Patients</span><strong></strong></button><button class="studio-icon-button" data-action="guide" aria-label="Open demonstration guide" title="Demonstration guide">${icon('book')}</button><button class="studio-reset" data-action="reset">${icon('reset')}<span>Reset dataset</span></button></div></header>
-    <div class="studio-navigation"><nav aria-label="Workspace perspectives" id="perspective-tabs"></nav><div id="scenario-controls"></div><details class="study-tools-menu"><summary>${icon('file')}<span>Study tools</span>${icon('chevron')}</summary><div><button data-tool="protocol">Study protocol</button><button data-tool="criteria">Criterion review desk</button><button data-tool="population">Boundary explorer</button><button data-action="report">Current review packet</button><button data-action="guide">Demonstration guide</button></div></details></div>
+    <div class="studio-navigation"><nav aria-label="Workspace perspectives" id="perspective-tabs"></nav><div id="scenario-controls"></div><details class="study-tools-menu"><summary>${icon('file')}<span>Study tools</span>${icon('chevron')}</summary><div><button data-tool="protocol">Study protocol</button><button data-tool="criteria">Criterion review desk</button><button data-tool="population">Full trial requirements</button><button data-action="report">Current review packet</button><button data-action="guide">Demonstration guide</button></div></details></div>
     <div id="workspace-context" class="workspace-context"></div>
     <main id="main" tabindex="-1" class="studio-main"><section id="patient-perspective" aria-label="Patient Review"><button class="mobile-population-jump studio-button" data-action="population-jump">Explore population ↘</button><div class="patient-studio-layout"><div class="population-stage-column"><div id="patient-people-slot"></div><div id="patient-scene-slot"></div><div id="cohort-charts" aria-label="Cohort visual insights"></div><section id="scene-story" class="scene-story"></section><div class="stage-reading-note">${icon('shield')} Explicit rules. Traceable evidence. Expert review required.</div></div><div class="patient-detail-region"><button class="mobile-back" data-action="back-to-queue">← Back to patient queue</button><div id="patient-detail"></div></div></div></section>
-    <section id="trial-perspective" aria-label="Trial Strategy" hidden><div id="trial-people-slot"></div><div id="trial-summary"></div><div id="trial-charts" aria-label="Trial visual analysis"></div><details class="analysis-secondary" id="trial-context-details"><summary>Population, composition source data & study context</summary><div class="trial-studio-layout"><div class="trial-population-column"><div id="trial-scene-slot"></div><section class="trial-linked-selection studio-sheet"><span class="studio-eyebrow">ONE CONNECTED ANALYSIS</span><h3>The same patients, in context.</h3><p>Age and clinical subgroup selections filter the population and patient table together. Whole-cohort counts remain explicit.</p><div id="trial-selection"></div><button class="studio-button" data-action="patient-table-jump">${icon('people')} Open synchronized patient table ${icon('arrow')}</button></section></div><div id="trial-analytics"></div></div></details></section>
+    <section id="trial-perspective" aria-label="Trial Strategy" hidden><div id="trial-summary"></div><div id="trial-people-slot"></div><div id="trial-charts" aria-label="Trial visual analysis"></div><details class="analysis-secondary" id="trial-context-details"><summary>Population, composition source data & study context</summary><div class="trial-studio-layout"><div class="trial-population-column"><div id="trial-scene-slot"></div><section class="trial-linked-selection studio-sheet"><span class="studio-eyebrow">ONE CONNECTED ANALYSIS</span><h3>The same patients, in context.</h3><p>Age and clinical subgroup selections filter the population and patient table together. Whole-cohort counts remain explicit.</p><div id="trial-selection"></div><button class="studio-button" data-action="patient-table-jump">${icon('people')} Open synchronized patient table ${icon('arrow')}</button></section></div><div id="trial-analytics"></div></div></details></section>
     <section id="decision-perspective" aria-label="Decision Review" hidden><div id="decision-people-slot"></div><div id="decision-content"></div></section></main>
     <footer class="studio-footer"><span>FICTIONAL STUDY · SYNTHETIC RECORDS · LOCAL CALCULATIONS</span><span>The index is unvalidated. Modeled matching is not enrollment approval.</span></footer>`;
   queueDialog.innerHTML = `<header class="queue-drawer-header"><div><span class="studio-eyebrow">SYNTHETIC RECORDS</span><h2 id="queue-title">Patient explorer</h2></div><button class="studio-icon-button" data-action="close-queue" aria-label="Close patient explorer">${icon('close')}</button></header><div id="patient-queue" class="patient-queue-region"></div>`;
@@ -130,8 +132,9 @@ export function mountStudio() {
     app.classList.toggle('mobile-detail-open', mobileDetailOpen);
     document.querySelector('.mobile-back').textContent = mobileReturnToStage ? '← Back to population' : '← Back to patient queue';
     patch('perspective-tabs', [['patient', 'people', 'Patient Review'], ['trial', 'chart', 'Trial Strategy'], ['decision', 'shield', 'Decision Review']].map(([id, symbol, label]) => `<button data-perspective="${id}" ${state.perspective === id ? 'aria-current="page"' : ''} class="perspective-tab ${state.perspective === id ? 'active' : ''}">${icon(symbol)}<span>${label}</span></button>`).join(''));
-    patch('active-study', run.casePack ? `<span>EXCLUSION INVESTIGATION / AUTHORED PROTOCOL SNAPSHOTS</span><h1>${e(run.casePack.id)} <span>${e(run.casePack.title)}</span></h1>` : `<span>CLINICAL DEVELOPMENT / ${e(study.phase).toUpperCase()}</span><h1>${e(study.drug)} <span>${e(study.title.replace(study.drug, '').trim())}</span></h1>`);
-    if (run.casePack && !run.casePack.proposedConfigured) patch('scenario-controls', '<span class="case-scenario-note">Current protocol snapshots</span><button class="studio-button" data-action="assumptions">Proposed criteria: requires configuration</button>');
+    patch('active-study', run.unified ? `<span>ONE ONCOLOGY TRIAL / AUTHORED SYNTHETIC PROTOCOL</span><h1>SYN-217 <span>Every patient. Every requirement.</span></h1>` : run.casePack ? `<span>EXCLUSION INVESTIGATION / AUTHORED PROTOCOL SNAPSHOTS</span><h1>${e(run.casePack.id)} <span>${e(run.casePack.title)}</span></h1>` : `<span>CLINICAL DEVELOPMENT / ${e(study.phase).toUpperCase()}</span><h1>${e(study.drug)} <span>${e(study.title.replace(study.drug, '').trim())}</span></h1>`);
+    if(run.unified) patch('scenario-controls', `<div class="scenario-segmented" aria-label="Active protocol scenario"><button data-scenario="original" aria-pressed="${state.scenarioId==='original'}" class="${state.scenarioId==='original'?'active':''}">Original</button><button data-scenario="proposed-inclusive" aria-pressed="${state.scenarioId==='proposed-inclusive'}" class="${state.scenarioId==='proposed-inclusive'?'active proposed':''}">Proposed inclusive</button></div><span class="unified-demo-badge">Authored demo protocol</span>${run.current.gate.requested&&!run.current.gate.active?`<details class="scenario-advanced"><summary>Withheld · Original retained</summary><div><strong>Proposed changes were not applied</strong><p>${e(run.current.gate.reasons.join(' '))}</p></div></details>`:''}`);
+    else if (run.casePack && !run.casePack.proposedConfigured) patch('scenario-controls', '<span class="case-scenario-note">Current protocol snapshots</span><button class="studio-button" data-action="assumptions">Proposed criteria: requires configuration</button>');
     else patch('scenario-controls', `<div class="scenario-segmented" aria-label="Active protocol scenario"><button data-scenario="original" aria-pressed="${state.scenarioId === 'original'}" class="${state.scenarioId === 'original' ? 'active' : ''}">Original</button><button data-scenario="renal-revision" aria-pressed="${state.scenarioId === 'renal-revision'}" class="${state.scenarioId === 'renal-revision' ? 'active proposed' : ''}">Proposed <span>renal</span></button></div><details class="scenario-advanced"><summary aria-label="Inspect evidence-gated scenario options" title="Scenario options">${icon('layers')}</summary><div><label for="scenario-options">Predefined scenario</label><select id="scenario-options"><option value="original" ${state.scenarioId === 'original' ? 'selected' : ''}>Original protocol</option>${clinicalConfig.scenarios.filter(s=>!run.casePack || s.id==='renal-revision').map(s => `<option value="${e(s.id)}" ${state.scenarioId === s.id ? 'selected' : ''}>${e(s.label)} · ${e(s.status)}</option>`).join('')}</select><strong>${e(run.current.gate.active ? 'Applied to synthetic comparison' : run.current.gate.requested ? 'Withheld · original rules retained' : 'Original rules active')}</strong><p>${e(run.current.gate.reasons.join(' ') || 'No revision is currently applied. Proposed rules require explicit registered support and synthetic-demonstration approval.')}</p><small>Approval here applies only to this synthetic demo.</small></div></details>`);
     patch('workspace-context', renderContext(run, state) + (run.casePack ? `<details class="case-context-summary"><summary>${icon('info')} Case context & source</summary><p><strong>Original concern:</strong> ${e(run.casePack.original_concern)}</p><p><strong>Review basis:</strong> ${run.casePack.source_category.map(e).join(' · ')}</p><p><strong>Investigate:</strong> ${e(run.casePack.reconsideration_basis)}</p><p><strong>Missing configuration:</strong> ${run.casePack.missing_configuration.map(e).join('; ')}.</p><button class="studio-source-link" data-source="${e(run.casePack.sourceId)}">Supplied case passage ↗</button><div class="case-anchor-links">${run.patients.filter(p=>p.provenance.type==='hand-authored-anchor').map(p=>`<button class="studio-button" data-patient="${e(p.id)}">${e(p.id)}</button>`).join('')}</div></details>` : ''));
     for (const name of ['patient', 'trial', 'decision']) document.getElementById(`${name}-perspective`).hidden = state.perspective !== name;
@@ -140,10 +143,10 @@ export function mountStudio() {
     patch('patient-queue', renderPatientQueue({ state, run, escape: e, icon }));
     const visible = visibleRecords(run, state.filters);
     const selectedIndex = visible.findIndex(r => r.id === state.selectedPatientId);
-    patch('patient-detail', `<div class="patient-stepper"><span>${selectedIndex < 0 ? 'Selected record is outside current filters' : `${selectedIndex + 1} of ${visible.length} shown`}</span><div><button data-action="previous-patient" aria-label="Previous visible patient" ${selectedIndex <= 0 ? 'disabled' : ''}>←</button><button data-action="next-patient" aria-label="Next visible patient" ${selectedIndex < 0 || selectedIndex >= visible.length - 1 ? 'disabled' : ''}>→</button></div></div>${renderPatientDetail({ state, run, sources, config: clinicalConfig, escape: e, icon })}`, patientChanged || runChanged);
+    patch('patient-detail', `<div class="patient-stepper"><span>${selectedIndex < 0 ? 'Selected record is outside current filters' : `${selectedIndex + 1} of ${visible.length} shown`}</span><div><button data-action="previous-patient" aria-label="Previous visible patient" ${selectedIndex <= 0 ? 'disabled' : ''}>←</button><button data-action="next-patient" aria-label="Next visible patient" ${selectedIndex < 0 || selectedIndex >= visible.length - 1 ? 'disabled' : ''}>→</button></div></div>${renderPatientDetail({ state, run, sources:run.evidenceRegistry, config: run.protocolConfig || clinicalConfig, escape: e, icon })}`, patientChanged || runChanged);
     if (patientChanged || previousDetailTab !== state.detailTab) document.querySelector('#patient-detail-content')?.scrollTo({ top: 0, behavior: 'instant' });
     patch('case-people-controls', renderCasePeopleControls(run, state));
-    peopleHost.hidden = !run.casePack;
+    peopleHost.hidden = !run.casePack && !run.unified;
     const peopleDestination = document.getElementById(`${state.perspective}-people-slot`);
     if (peopleHost.parentElement !== peopleDestination) peopleDestination.append(peopleHost);
     patch('cohort-charts', renderPatientCharts(run, state), runChanged ? 'charts' : false);
@@ -249,9 +252,9 @@ export function mountStudio() {
   }
 
   function renderTool() {
-    const label = { protocol: 'Study protocol', criteria: 'Criterion review desk', population: 'Boundary explorer', report: 'Current review packet', assumptions: 'Dataset assumptions & provenance' }[tool] || 'Demonstration guide';
+    const label = workspace.run.unified && tool==='population' ? 'Full trial requirements' : { protocol: 'Study protocol', criteria: 'Criterion review desk', population: 'Boundary explorer', report: 'Current review packet', assumptions: 'Dataset assumptions & provenance' }[tool] || 'Demonstration guide';
     const actions = tool === 'report' ? `<button class="studio-button" data-action="export">${icon('download')} Export JSON</button><button class="studio-button primary" data-action="print">${icon('print')} Print / PDF</button>` : '';
-    patch(toolDialog, `${toolHeader(label, actions)}<div class="tool-content">${tool === 'report' ? renderReport(workspace) : workspace.run.casePack ? renderCaseTool(workspace.run) : tool === 'assumptions' ? renderAssumptions(workspace.run) : renderStudyTool(tool, { state: { ...workspace.state, ...toolState, criterion: toolCriterion }, run: workspace.run })}</div>`);
+    patch(toolDialog, `${toolHeader(label, actions)}<div class="tool-content">${tool === 'report' ? renderReport(workspace) : workspace.run.unified ? renderUnifiedTool(workspace.run,tool) : workspace.run.casePack ? renderCaseTool(workspace.run) : tool === 'assumptions' ? renderAssumptions(workspace.run) : renderStudyTool(tool, { state: { ...workspace.state, ...toolState, criterion: toolCriterion }, run: workspace.run })}</div>`);
   }
 
   function showTool(name) {
@@ -264,6 +267,8 @@ export function mountStudio() {
   }
 
   function openEvidence(id, passageId = null) {
+    const authored=workspace.run.unified && workspace.run.evidenceRegistry.find(source=>source.id===id&&source.type==='authored-demo-assumption');
+    if(authored){workspace.setEvidence(id);evidenceView={kind:'source',id,passageId};evidenceDialog.innerHTML=renderUnifiedSource(authored,workspace.run);if(!evidenceDialog.open)evidenceDialog.showModal();transitionPanel(evidenceDialog,'drawer');return;}
     evidenceView = {kind:'source',id,passageId};
     if (guidanceSources.some(source => source.id === id)) { workspace.setEvidence(id); evidenceDialog.innerHTML = renderVerifiedSource(id,passageId,workspace.run.id); if (!evidenceDialog.open) evidenceDialog.showModal(); transitionPanel(evidenceDialog,'drawer'); return; }
     const caseSource = investigationSources.find(source=>source.id===id);
@@ -281,7 +286,7 @@ export function mountStudio() {
 
   function renderScratch(feedbackOnly = false) {
     const errors = draftEvaluation?.errors || {};
-    const html = renderProfileForm({ draft: profileDraft, evaluation: draftEvaluation, errors, datasetLabel: `${workspace.run.dataset.shortLabel} · ${workspace.run.current.total} loaded records`, escape: e, icon });
+    const html = workspace.run.unified ? renderUnifiedProfile(profileDraft,draftEvaluation,errors) : renderProfileForm({ draft: profileDraft, evaluation: draftEvaluation, errors, datasetLabel: `${workspace.run.dataset.shortLabel} · ${workspace.run.current.total} loaded records`, escape: e, icon });
     if (!feedbackOnly) { renderedHtml.delete(profileDialog); patch(profileDialog, html); return; }
     // Keep the live form mounted: replacing a focused form on blur can cause a native navigation.
     const template = document.createElement('template');
@@ -307,7 +312,7 @@ export function mountStudio() {
   function evaluateScratch() {
     clearTimeout(profileTimer);
     captureDraft();
-    draftEvaluation = evaluateDraft(profileDraft, workspace.run.patients);
+    draftEvaluation = evaluateDraft(profileDraft, workspace.run.patients, workspace.run.unified);
     renderScratch(true);
   }
 
@@ -325,6 +330,7 @@ export function mountStudio() {
   }
 
   function showGuide() {
+    if(workspace.run.unified){closeQueue(false);tool='guide';toolDialog.innerHTML=`<header class="tool-header"><span class="studio-eyebrow">ONE TRIAL · DEMONSTRATION GUIDE</span><button class="studio-icon-button" data-action="close-tool" aria-label="Close guide">${icon('close')}</button></header><div class="tool-content"><article class="unified-protocol-tool"><h2>One cohort. Eight connected domains.</h2><ol><li>Inspect SYN-0001: HIV, brain metastases, age, support needs, another malignancy and renal function coexist on the same patient.</li><li>Apply Proposed inclusive. Every medical and participation requirement must pass.</li><li>Open Trial Strategy → Patient × Criterion. Select any domain cell for its checks and observations.</li><li>Inspect SYN-0002 for a retained interaction, SYN-0003 for a missing lab, SYN-0004 for pending support and SYN-0005 for pending consent.</li><li>Use Gender and the combined Race/Ethnicity panel to inspect composition; neither changes eligibility.</li><li>Record an actual review annotation and export the shared review packet.</li></ol><p>The policies, patients and assessments are authored fiction. A matching record is a modeled review candidate, not an enrollment authorization.</p></article></div>`;if(!toolDialog.open)toolDialog.showModal();return;}
     closeQueue(false);
     tool = 'guide';
     renderedHtml.delete(toolDialog);
@@ -363,6 +369,9 @@ export function mountStudio() {
       if (button.dataset.analysisDimension) { analysisDimension = button.dataset.analysisDimension; render(); transitionPanel(document.getElementById('trial-charts')); return; }
       if (button.dataset.guidanceOpen) { openGuidanceTopic(button.dataset.guidanceOpen); return; }
       if (button.dataset.analysisGroup) { inspectAnalysisGroup(button.dataset.analysisGroup); return; }
+      if(button.dataset.inspectDomain){const patientId=button.dataset.criterionPatient||workspace.state.selectedPatientId;if(patientId!==workspace.state.selectedPatientId)workspace.selectPatient(patientId);evidenceView={kind:'domain',patientId,domainId:button.dataset.inspectDomain};evidenceDialog.innerHTML=renderUnifiedDomain(workspace.run,patientId,button.dataset.inspectDomain);if(!evidenceDialog.open)evidenceDialog.showModal();transitionPanel(evidenceDialog,'drawer');return;}
+      if(button.hasAttribute('data-open-matrix')){analysisView='matrix';navigate('trial');return;}
+      if(button.dataset.openInclusion){navigate('patient');selectPatient(button.dataset.openInclusion,'picker');return;}
       if (button.dataset.source) { openEvidence(button.dataset.source, button.dataset.passage); return; }
       if (button.dataset.perspective) { if (toolDialog.open) toolDialog.close(); navigate(button.dataset.perspective); return; }
       if (button.dataset.scenario) { changeScenario(button.dataset.scenario); return; }
@@ -468,7 +477,7 @@ export function mountStudio() {
         requestAnimationFrame(() => window.print());
       }
       if (action === 'export') {
-        const blob = new Blob([JSON.stringify(buildReviewPacket(workspace), null, 2)], { type: 'application/json' });
+        const blob = new Blob([JSON.stringify(buildReviewPacket(workspace), null, workspace.run.unified ? 0 : 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a'); link.href = url; link.download = `cohort-${workspace.run.id}-${workspace.run.datasetVersion}.json`; link.click();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -568,10 +577,11 @@ export function mountStudio() {
   const presentationTargets={
     population:['#population-visual .constellation','patient-perspective'],
     'original-reason':['#patient-detail [data-brief-section="original"] .brief-rule','patient-detail'],
-    'evidence-passage':['#evidence-dialog [data-presentation-target="evidence-passage"]','evidence-dialog'],
+    'evidence-passage':['#evidence-dialog .verified-passage','evidence-dialog'],
     'patient-conclusion':['#patient-detail .brief-lead','patient-detail'],
-    'attention-breakdown':['#patient-detail [data-presentation-target="attention-breakdown"]','patient-detail'],
-    'medication-rule':['#patient-detail #criterion-DDI','patient-detail'],
+    'inclusion-matrix':['#trial-charts .unified-matrix','trial-charts'],
+    'attention-breakdown':['#patient-detail .unified-attention','patient-detail'],
+    'medication-rule':['#patient-detail [data-inspect-criterion="DDI"]','patient-detail'],
     'remaining-limits':['#patient-detail [data-brief-section="limits"]','patient-detail'],
     'eligibility-flow':['#trial-charts [data-chart="flow"] figure','trial-charts'],
     'age-composition':['#trial-charts [data-composition-group="75plus"]','trial-charts'],
@@ -580,7 +590,7 @@ export function mountStudio() {
     'guidance-documented':[()=>`#decision-content [data-guidance-topic="${documentedTopic}"]`,'decision-content'],
     'guidance-unresolved':[()=>`#decision-content [data-guidance-topic="${unresolvedTopic}"]`,'decision-content'],
     'decision-trace':['#decision-content .trace-inspector','decision-content'],
-    'report-summary':['#tool-dialog [data-presentation-target="report-summary"]','tool-dialog'],
+    'report-summary':['#tool-dialog .unified-coverage','tool-dialog'],
   };
   const resolvePresentationTarget=id=>{const selector=presentationTargets[id]?.[0];return selector?document.querySelector(typeof selector==='function'?selector():selector):null;};
   function presentationGuidanceTopic(run,state,documented){
@@ -638,6 +648,7 @@ export function mountStudio() {
       for(const id of view.briefOpen)document.querySelector(`#patient-detail [data-brief-section="${id}"]`)?.setAttribute('open','');
       if(view.tool)showTool(view.tool);
       if(view.evidence?.kind==='source'&&workspace.run.evidenceRegistry.some(source=>source.id===view.evidence.id))openEvidence(view.evidence.id,view.evidence.passageId);
+      if(view.evidence?.kind==='domain'){evidenceView=view.evidence;evidenceDialog.innerHTML=renderUnifiedDomain(workspace.run,view.evidence.patientId,view.evidence.domainId);evidenceDialog.showModal();}
       if(view.evidence?.kind==='criterion'&&workspace.run.explanations[view.evidence.patientId]){
         evidenceView=view.evidence;evidenceDialog.innerHTML=renderCriterionInspection(workspace.run,view.evidence.patientId,view.evidence.criterionId,view.evidence.phase);evidenceDialog.showModal();
       }
@@ -648,16 +659,16 @@ export function mountStudio() {
     }finally{presentationNavigation=false;}
   }
   const presentation=mountPresentation({
-    studyLabel:study.title,datasetLabel:datasetDefinitions.casebook.label,resolveTarget:resolvePresentationTarget,
+    studyLabel:unifiedStudy.title,datasetLabel:'One shared cohort · 500 synthetic patients',resolveTarget:resolvePresentationTarget,
     validate(definitions){
       const blockers=[],omitted=[],available=[];
-      if(!datasetDefinitions.casebook)blockers.push('The reference dataset is unavailable.');
-      for(const id of ['P03','P06','P16'])if(!anchorPatients.some(patient=>patient.id===id))blockers.push(`Required reference patient ${id} is unavailable.`);
-      if(!resolveScenario(clinicalConfig,'renal-revision').active)blockers.push('The existing proposed renal scenario is not executable.');
-      if(!sources.some(source=>source.id==='SYN-PK-02'&&source.passage))blockers.push('The required fictional renal evidence passage is unavailable.');
+      if(!datasetDefinitions.unified)blockers.push('The shared cohort is unavailable.');
+      for(const id of ['SYN-0001','SYN-0002','SYN-0003'])if(!workspace.run.patients.some(patient=>patient.id===id))blockers.push(`Required reference patient ${id} is unavailable.`);
+      if(!resolveScenario(unifiedProtocol,'proposed-inclusive').active)blockers.push('The proposed inclusive protocol is not executable.');
+      if(!workspace.run.evidenceRegistry.some(source=>source.id==='DEMO-POLICY-HIV'))blockers.push('The authored HIV policy is unavailable.');
       if(blockers.length)return {blockers,omitted,scenes:definitions};
-      const preview=createWorkspace({dataset:'casebook'}),seen=new Set();
-      const priority=evaluateDraft(anchorPatients.find(patient=>patient.id==='P03')||{}).profile;
+      const preview=createWorkspace({dataset:'unified'}),seen=new Set();
+      const priority=preview.run.profiles['SYN-0001'];
       for(const definition of definitions){
         const ids=[definition.target,...(definition.beats||[]).map(beat=>beat.target)];
         if(seen.has(definition.id)||!Number.isFinite(definition.holdMs)||definition.holdMs<=0){blockers.push('Scene IDs must be unique and hold durations must be positive.');continue;}seen.add(definition.id);
@@ -672,7 +683,7 @@ export function mountStudio() {
           missing=ids.find(id=>!['population','evidence-passage','guidance-documented','guidance-unresolved'].includes(id)&&!probe.content.querySelector(presentationTargets[id][0]));
           if(!missing)missing=ids.find(id=>id==='guidance-documented'&&!presentationGuidanceTopic(preview.run,preview.state,true)||id==='guidance-unresolved'&&!presentationGuidanceTopic(preview.run,preview.state,false));
         }
-        const reason=missing?`View target ${missing} is unavailable.`:definition.id==='priority'&&!Number.isFinite(priority?.score)?'No configured attention index is available.':null;
+        const reason=missing?`View target ${missing} is unavailable.`:definition.id==='priority'&&!Number.isFinite(preview.run.profiles[definition.context.patientId]?.score)?'No configured attention index is available.':null;
         if(reason){if(definition.required)blockers.push(`${definition.title}: ${reason}`);else omitted.push({id:definition.id,title:definition.title,reason});}else available.push(definition);
       }
       return {blockers,omitted,scenes:available};
@@ -685,7 +696,7 @@ export function mountStudio() {
         closePresentationViews();changeDataset(definition.context.dataset,activity);changeScenario(definition.context.scenario,activity);
         workspace.setFilters({status:'all',age:'all',subgroup:'all',query:'',demographic:'all'});
         navigate(definition.context.perspective,false);selectPatient(definition.context.patientId,'presentation');workspace.setDetailTab(definition.context.detailTab);
-        analysisView=definition.view?.analysis||'eligibility';analysisDimension=definition.view?.dimension||'age';
+        analysisView=definition.view?.analysis||'matrix';analysisDimension=definition.view?.dimension||'age';
         mobileDetailOpen=compactViewport.matches&&definition.context.perspective==='patient'&&definition.target!=='population';render();
         for(const part of document.querySelectorAll('#patient-detail [data-brief-section]'))part.open=part.dataset.briefSection===definition.view?.brief;
         const underlying=document.querySelector('#patient-detail .brief-underlying');if(underlying)underlying.open=Boolean(definition.view?.attention);
@@ -694,7 +705,7 @@ export function mountStudio() {
         if(definition.view?.group){workspace.setFilters({subgroup:definition.view.group});presentationOwnedGroup=definition.view.group;}
         for(const row of document.querySelectorAll('#decision-content .guidance-row'))row.open=false;
         const trace=document.querySelector('#decision-content .decision-trace');if(trace)trace.open=Boolean(definition.view?.trace);
-        if(definition.view?.trace){traceStep=definition.view.trace;traceCriterion='RENAL';render();document.querySelector('#decision-content .decision-trace').open=true;}
+        if(definition.view?.trace){traceStep=definition.view.trace;traceCriterion='HIV';render();document.querySelector('#decision-content .decision-trace').open=true;}
         if(definition.view?.report)showTool('report');
       }finally{presentationNavigation=false;}
       await focusPresentationTarget(definition.target,signal);
@@ -703,7 +714,7 @@ export function mountStudio() {
       signal.throwIfAborted();presentationNavigation=true;
       try{
         if(beat.action==='inspect-group'){inspectAnalysisGroup(beat.group,true);presentationOwnedGroup=beat.group;}
-        if(beat.action==='trace'){traceStep=beat.step;traceCriterion='RENAL';render();document.querySelector('#decision-content .decision-trace').open=true;}
+        if(beat.action==='trace'){traceStep=beat.step;traceCriterion='HIV';render();document.querySelector('#decision-content .decision-trace').open=true;}
         if(beat.action.startsWith('guidance-')){
           const row=presentationGuidanceTopic(workspace.run,workspace.state,beat.action==='guidance-documented');
           if(!row)throw new Error('No applicable documented/open topic is available for this scene.');

@@ -7,7 +7,7 @@ import { escape as e, icon } from './ui.js';
 export function renderComposition(run, state) {
   const age = state.compositionDimension === 'age';
   const proposedAvailable = run.proposed.available !== false;
-  const dimensions = run.demographics.filter(item => item.id !== 'gender');
+  const dimensions = run.demographics.filter(item => run.unified || item.id !== 'gender');
   const dimension = age ? { id: 'age', label: 'Age', groups: run.ageGroups.map(group => ({ ...group, colorToken: '--category-1' })) } : dimensions.find(item => item.id === state.compositionDimension) || dimensions[0];
   const groups = dimension.groups.filter(group => group.screened || group.missing);
   const known = groups.filter(group => !group.missing && group.id !== 'unknown' && group.id !== 'not_collected').reduce((sum, group) => sum + group.screened, 0);

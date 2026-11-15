@@ -1,221 +1,64 @@
-# Cohort — Live Trial Review Studio
+# Cohort — one SYN-217 trial
 
-A frontend-only synthetic trial-review studio with connected Patient Review, Trial Strategy, and Decision Review perspectives. A pure deterministic engine applies versioned criteria; one immutable analysis snapshot drives the 3D population, accessible table, age and demographic composition, evidence trace, and review packet.
+Cohort is a fictional oncology-trial review workspace with **one shared cohort of 500 synthetic patients**. Every patient is evaluated against Core requirements plus **HIV, BRAIN, OLDER, ACCESS, COGNITIVE, PRIOR, PREG and RENAL**. These are domains on the same patient, not separate studies.
 
-## Run
+The default is **Original**. **Proposed inclusive** evaluates the same observations against the complete proposed protocol. A patient meets the full modeled inclusion rules only when all applicable medical **and participation** requirements pass. Medical status and participation status remain separately inspectable. A modeled match is not enrollment approval.
 
-Node.js 18 or newer. Runtime libraries are locally installed, pinned Three.js 0.187.0 and free Motion 14.14.0. No API keys, remote assets, model service, or backend are required.
+## Run and verify
 
 ```sh
 npm ci
 npm run dev
-# http://localhost:5173
-npm run check
 npm test
+npm run check
 npm run build
+npm run generate
 ```
 
-`dist/` is the static build, including local Three.js/Motion bundles and their MIT licenses. Serve it at a site's root. To use a different local port: `PORT=5174 npm run dev`. State and events are held in this browser tab: perspective changes preserve the run, selection, filters and working dataset. Reload clears the session. Reset restores the selected dataset's immutable baseline (500, 20, or the selected 50-record case pack), removes its working additions, and retains the current perspective, other dataset working copy and actual session history.
+The development server defaults to `http://localhost:5173`; `PORT=5175 npm run dev` selects another port. `dist/` is the static production build, including local Motion/Three.js bundles and licenses. No backend, API key or model service is required.
 
-## Update the existing Replit app
+`npm run generate` reproducibly exports [data/syn217-unified.json](data/syn217-unified.json). Edit the versioned protocol and generator definitions, regenerate the export, then refresh the application. The application uses those same deterministic definitions; editing the generated export alone does not install a new cohort. The previous renal-only generator remains available as `npm run generate:legacy` for archived regression work.
 
-1. Open **Git**, select `main`, and pull from `https://github.com/MuneebHoda/cohort`. Preserve any uncommitted Replit edits before pulling.
-2. Run `npm ci` in the Replit Shell, then press **Run**. The checked-in `.replit` command binds the preview server to `0.0.0.0:5173` and maps it to the web Preview. Ordinary local development still binds to `127.0.0.1`.
-3. Open **Presentation** in the app header to confirm the new version.
-4. To update the public site, open **Publishing** and publish/republish after pulling. For a Static deployment, use build command `npm ci && npm run build` and public directory `dist`. A Git pull or Preview restart alone does not update the published snapshot.
+State, profile additions and actual review annotations belong to the current browser tab. Reload clears them. Reset restores the original 500 records and retains the actual local event history.
 
-The repository builds to plain static files. Static publishing settings apply when the existing Replit app offers that deployment type; Agent-created apps may use a different deployment type. Preserve the existing deployment settings when republishing those apps.
+## Exact demonstration
 
-## Guided Presentation
+1. Start in **Patient Review → SYN-0001**. HIV, brain metastases, older age, controlled cardiac history, access support, assisted consent, another malignancy and renal impairment coexist on this record. The overview exposes all nine domain controls, including Core.
+2. Apply **Proposed inclusive**. SYN-0001 meets all 18 modeled requirements. Open any domain for actual observations, active checks, original/proposed comparisons and the authored policy basis.
+3. Open **Trial Strategy**. **Patient × Criterion** is first: 25 patients per page, nine grouped domain columns, independent results and a selected-patient explanation of why the person meets the rules, is excluded or remains indeterminate.
+4. Inspect **SYN-0002** for a retained interaction, **SYN-0003** for missing CD4 information, **SYN-0004** for pending accommodations, **SYN-0005** for pending consent, **SYN-0006** for a fixed pregnancy restriction and **SYN-0007** for an original-protocol match.
+5. Use **Patient group**, **Full inclusion result**, the individual patient picker or **Show N people**. These filter the same cohort and preserve the complete evaluation of every domain.
+6. Trial Strategy also has **Eligibility changes**, **Exclusion reasons** and **Population composition**. Composition uses **Gender**, without a Sex control, and one joint **Race/Ethnicity** view that retains both recorded fields. Unknown/not-collected values and both denominator definitions stay visible.
+7. In **Decision Review**, inspect the mapped FDA passages, documentation gaps and substantive questions. A source link is not a reviewer approval. Recording a rationale creates an unauthenticated demo annotation and never changes eligibility.
+8. Open **Review packet** for HTML/print and JSON. The packet includes all people, both protocols, filtered IDs, every explanation, evidence and actual actions. **Presentation** walks through the same shared trial in twelve scenes with five minutes of configurable speaking time.
 
-Choose **Presentation** in the header, then **Start presentation** for **Cohort — From Exclusion to Evidence**. The twelve-scene reference story contains five minutes of speaking time, excluding preparation and pauses. It operates the real patient, evidence, scenario, chart, guidance, trace and report views. Edit scene durations, captions and notes in [`src/presentation-scenes.js`](src/presentation-scenes.js).
+## Data, rules and source boundaries
 
-Use Pause, Previous, Next or the scene picker; Space and the arrow keys work outside native editing controls, and Escape exits. Deliberate application interaction pauses the tour and offers **Return to this scene and continue** or **Continue with the next scene**. Exit restores the earlier view while retaining deliberate edits and reviewer notes. The final report stops with Replay and Exit; no narration, approvals, printing or downloads happen automatically. See the [presentation handoff and screenshots](docs/presentation/HANDOFF.md) for the sequence, integration and verified behavior.
+- [src/unified-protocol.js](src/unified-protocol.js): editable domain/field definitions, units, 18 criteria, original/proposed predicates, thresholds, scenario revisions and authored-policy sources.
+- [src/unified-cohort.js](src/unified-cohort.js): seven hand-authored demonstration records plus 493 reproducible mixed-condition records; validation and adaptation into the existing eligibility engine.
+- [src/unified-analysis.js](src/unified-analysis.js): immutable shared analyses, distinct medical/participation results, domain results, explanations, demographics and normalized exports.
+- [src/unified-views.js](src/unified-views.js): patient inspector, matrix, criterion comparisons, joint composition, protocol/source inspection, profile form and reports.
 
-## Three-minute demonstration
+Clinical defaults are authored simulation assumptions. They are **not FDA eligibility criteria, clinical recommendations or empirical SYN-217 safety evidence**. General guidance is kept separate from the new `authored-demo-assumption` sources, which can authorize only explicitly synthetic scenarios. Fixed medication, cardiac and pregnancy restrictions cannot be overridden by a favorable score or an unrelated revision.
 
-1. Patient Review opens **Expanded cohort — 500 synthetic patients**. Select **Proposed renal**, then **Newly matching**. The paginated queue includes all 80 new matches; 78 have complete attention-index inputs, while two remain unscored. The population overview aggregates all 500 records into four proportional segments of a sculptural ring. Select a segment to inspect up to six labelled patient spheres (three on a phone); exact ranges and paging keep every record accessible. Open **Patients 500** for the complete searchable, ranked table in a persistent drawer. Segment focus does not change analysis filters or counts.
-2. Select SYN-0005. Compare the original renal exclusion and proposed result, inspect every criterion and factor, then open its fictional renal evidence. A generated stability flag and one dated measurement do not establish longitudinal stability.
-3. Open **Next review** and record a clinical-review flag, information request, retained restriction or reviewer note with a rationale. These actual annotations do not change eligibility or approve inclusion.
-4. Open **Trial Strategy**. Compare 153/500 with 233/500, then inspect Age, Sex, Race, Ethnicity or Site. Click a category and open its exact patients. Whole-cohort denominators remain fixed; active filters appear as removable chips.
-5. Open **Decision Review — Regulatory Review — Simulation**. Trace source → criterion → patient inputs → outcomes → index factors → actual review action. Export the current review packet to JSON or print/PDF.
-6. **Review a profile** evaluates a draft outside cohort totals. Only **Add synthetic profile to working cohort** versions the dataset. Reset restores the selected baseline. Unknown, not collected and recorded No remain distinct.
-7. Select **Reference case — 20 synthetic patients** for the rehearsed regression. Under proposed renal, its exact ranking remains P13 (14), P02 (24), P19 (27), P09 (36), P03 (39), P11 (43). Inspect P06's retained interaction exclusion and P16's unresolved hepatic information. The demonstration guide explicitly switches to this reference dataset.
-8. **Study tools** retains the protocol, criterion desk and boundary explorer. Advanced options demonstrate withheld draft/ECOG revisions. The scene supports keyboard-accessible 2D and automatic no-WebGL fallbacks; the precise table is always retained.
+All criteria are evaluated independently. Aggregate precedence is **FAIL > UNKNOWN > PASS**, including participation requirements. Pending accommodation or consent information is UNKNOWN; an explicitly unmet required condition is FAIL. Known absence can make a condition-specific check not applicable; missing status cannot. Pregnancy applicability is explicitly assessed and never inferred from gender.
 
-Counts below are calculated outcomes, not generator targets. Values are **meets modeled rules / excluded / indeterminate**:
+Laboratory checks require correct units and valid sample dates within the authored **30-day** window relative to **2026-11-01**. No numerical string or alternative unit is silently converted by the engine. Profile forms validate explicit user input; unanswered fields remain unknown.
 
-| Cohort | Original | Proposed renal | Newly meets | Classification changes |
-|---|---|---|---:|---:|
-| Supplied reference 20 | 4 / 15 / 1 | 10 / 8 / 2 | 6 | 7 |
-| Expanded 500, seed 217 | 153 / 312 / 35 | 233 / 212 / 55 | 80 | 100 |
+The existing review-attention index covers **core factors only**. It does not model HIV, brain-metastasis, pregnancy or participation risk. It is unvalidated and is not a probability of harm. Ranking is restricted to newly matching patients with complete index inputs; other matching patients remain visible without a numerical rank. Age, gender, race and ethnicity add no points.
 
-Twenty expanded records become indeterminate rather than matching. Every ranked record passes all proposed criteria. Two newly matching records lack required index context and remain unscored. An index cannot cancel an exclusion or unknown.
+## Export schema
 
-## Reproduce and inspect the showcase
+Unified review packets use `schemaVersion: "2.0.0"`. Each raw patient is stored once in `analysis.patients`. Complete criterion evaluations are stored once per protocol in `analysis.original.records` and `analysis.proposed.records`.
 
-```sh
-npm run generate -- --seed 217 --count 500 --as-of 2026-11-01 --output output/showcase-cohort.json
-```
+`analysis.current.evaluationsFrom` identifies the active canonical collection. Each patient explanation retains its narrative, evidence, actions and blockers; `factsRef` and `criteriaRef` resolve to raw observations and canonical evaluations by patient ID. The selected `decisionBrief` is also included in full. Protocol definitions supply criterion titles, domains, scopes and field mappings. `analysis.fieldDefinitions` supplies the shared field dictionary. Blocker `textRef` and retaining-evidence `useRef` resolve their exact text in the canonical evaluation collection. This avoids serializing repeated snapshots while preserving the full calculation and provenance.
 
-Edit `src/synthetic-config.js` (SYN217-SHOWCASE **v2.0.0**) for seed, count, fixed date, profile mixture, missingness and synthetic demographic distributions. `src/synthetic-cohort.js` generates records without importing or resampling against the eligibility engine. Clinical and demographic streams are independent. Categories are validated. The clinical profiles are authored assumptions, not epidemiological estimates. They generate coherent variation; deliberately malformed/conflicting records live separately in `src/challenge-cases.js` and never enter ordinary analytics.
+Archived reference/case-pack fixtures remain available to tests and internal compatibility APIs. They are not offered as datasets in the main application. Their historical outcome counts and reference ranking remain regression checks, not expectations for this new cohort.
 
-Actual default summaries, each with denominator **500**:
+## Verification and remaining review
 
-| Dimension | Screened records |
-|---|---|
-| Age | Under 65: 167; 65–74: 163; 75+: 169; missing: 1 |
-| Sex as recorded | Female 206; Male 239; Intersex 12; Unknown 12; Not collected 31 |
-| Gender as recorded | Woman 184; Man 235; Non-binary 47; Another recorded gender 1; Unknown 11; Not collected 22 |
-| Race as recorded | White 169; Black or African American 112; Asian 94; Multiple recorded groups 49; American Indian or Alaska Native 33; Native Hawaiian or Other Pacific Islander 9; Unknown 15; Not collected 19 |
-| Ethnicity as recorded | Hispanic or Latino 89; Not Hispanic or Latino 367; Unknown 25; Not collected 19 |
-| Fictional site | DEMO-A 127; DEMO-B 108; DEMO-C 92; DEMO-D 76; DEMO-E 56; Unknown 18; Not collected 23 |
+The current frozen cohort produces **24 / 469 / 7** original and **153 / 263 / 84** proposed meets/excluded/indeterminate results. **131 newly match**; two original matches become indeterminate because the proposed renal rule requires a documented stability assessment. Counts come from the engine and reconcile to all 500 people.
 
-Clinical profile counts: preserved function 117, controlled metabolic 124, renal review 98, complex organ 85, functional restriction 43, interaction restriction 33. Missing renal measurements: 36 (13 unknown, 23 not collected); hepatic status: 26 (19 unknown, 7 not collected); renal stability: 24 (13 unknown, 11 not collected). Missingness can overlap and must not be summed into a unique-patient total. The generator command emits all category matching counts and clinical missingness counts as JSON. No reference population, geographic coverage or demographic representativeness is claimed.
+The full suite passes **224 tests**, retaining the previous clinical/ranking/controller regressions and adding 20 unified-trial checks. Syntax checks and the static production build pass. The [unified-trial handoff](docs/unified-trial/HANDOFF.md) records browser checks, screenshots, remaining clinical decisions and export verification.
 
-## Shared visual and motion system
-
-`src/tokens.css` is the authoritative color, radius, control-size and motion layer. Light reading surfaces use one teal theme; the population stage uses dark navy. Existing matches use slate blue, new matches teal, exclusions coral and indeterminate records amber, paired with labels and symbols. Categorical composition colors carry no clinical valence. Text variants meet AA contrast in their tested pairings.
-
-`src/motion.js` shares timing with the Three.js stage and uses the locally served free Motion runtime for interruptible 600ms ring/camera transitions and 680ms scenario transitions. Panel transitions remain 220ms; feedback 140ms. Scenario summaries describe actual calculated transfers. Motion MCP was not connected during this pass; the installed skill and current official documentation informed the implementation. Reduced motion commits final positions immediately, and a missing animation bundle leaves the stage functional without animated transitions.
-
-The 3D stage uses a tilted, rounded, capped ring with satin materials, a locally generated lighting environment and contact shadows. Segment angles encode whole-cohort counts, with small empty separator gaps; zero-count groups keep a label but receive no artificial arc. Shared filters highlight each segment's exact matching fraction while preserving its total angle and explicit matching/whole labels. The center always shows loaded records. This is a grouped overview, not one visible patient per loaded record.
-
-Focused inspection retains the ring and draws at most six patient spheres in one instanced mesh, with 84px labelled targets and 16px gaps. Capacity adapts to actual container width. New matches follow the existing ranking, with unscored matches last; other groups use natural ID order. The complete table retains every loaded ID. Table commits locate the exact group/page and close the drawer; arrow keys browse rows across pages without selecting, while Enter/Space commits. Search, filters, page and scroll survive drawer reopening. Escape closes it and restores focus. Mobile Back preserves the selection's scene or table origin, including detail stepping.
-
-Dataset changes and Reset return the scene to overview. Scenario changes preserve the focused group, explain an out-of-group selection and provide Locate. Reset view changes presentation only. Rendering settles when idle and pauses when hidden. The equivalent SVG 2D view and automatic WebGL fallback preserve group navigation, complete paging and keyboard controls. Sphere size and placement carry no clinical risk meaning. Geometry buffers are reused during animation, with no remote models or assets.
-
-## Visual analysis
-
-Patient Review now pairs the population ring with an interactive outcome snapshot and a compact criterion landscape. Select an outcome to filter the existing patient table and scene; the charts retain their explicit whole-cohort denominator. The selected-patient requirement map opens the existing criterion detail, with keyboard-accessible values and dismissible tooltips.
-
-Trial Strategy adds a proportional original-to-proposed flow diagram, exact transfer disclosure and criterion-level satisfied/excluded/unresolved bars. Configured comparisons are labelled as preview or active. Unconfigured case proposals have no invented flow. A neutral **Not in snapshot** segment distinguishes criteria absent from a record's authored protocol from actual passing assessments. Investigation routes have linked count bars, and ACCESS/COGNITIVE have separate readiness charts that include medically excluded records. Every figure derives from the shared immutable analysis; findings may overlap and no new risk score is introduced. Charts use native SVG/CSS, existing semantic colors, shared panel timing and the installed Motion runtime, with reduced-motion and missing-runtime fallbacks.
-
-## Exclusion Investigation case packs
-
-Use the existing **Dataset** selector for HIV, BRAIN, OLDER, ACCESS, COGNITIVE, PRIOR, PREG or RENAL. Each pack adds 50 distinct synthetic people: six hand-authored anchors and 44 seeded variants. The original 20-record reference and expanded 500-record datasets remain separate. No combined trial-coverage claim is made across these contexts.
-
-Each pack has a visible **Choose people to inspect** panel in Patient Review, Trial Strategy and Decision Review. Choose a **Medical result** and/or **Review pathway**, select an individual **Patient**, or use **Show N people** to open the matching patient list. These controls share the existing population filters and report subset. Counts follow the active filters; overlapping pathways do not change medical classification. Empty selections show a clear-filter recovery, and chart drill-downs remain reflected in the picker.
-
-The patient panel separates the original recorded medical/participation screen from current-protocol evaluation, investigation findings, evidence applicability, participation readiness and actual user-recorded review actions. Open **Case context & source** for a compact explanation and anchor shortcuts. The patient drawer has an **Investigation route** selector; its filters synchronize with the scene and Trial Strategy. Route counts may overlap and count unique people. Known medical failure still takes precedence over unknown information, with every reason preserved.
-
-HIV, brain-metastasis, older-adult and prior-cancer cases contrast retained blanket protocol restrictions with separately authored assessment-permitting snapshots. ACCESS and COGNITIVE keep support availability, procedure/method review and consent-process review outside the medical eligibility partition. PREG uses an evidence-gap / separate-research route, with no automatic inclusion scenario. Proposed medical criteria remain **Requires configuration** for seven packs. RENAL can compare the existing fictional SYN-217 configuration in that matching study only, with separate metric, unit and measurement-currency checks. No laboratory-expiry window or new cutoff is inferred.
-
-All eight case packs show **Not configured for this case** for attention scoring. The existing SYN-217 scoring stays confined to the original datasets. The supplied research-note text was not provided; the source drawer quotes the actual supplied case specification, registers the original note as unavailable, and marks bibliography/primary verification unresolved. Fictional observations, hypothetical protocol settings and authored clinical assessments are labelled separately.
-
-See [the complete handoff](docs/exclusion-investigation/HANDOFF.md) for changed files, case demonstrations, outcome counts, clinical inputs for Ehsan, source questions for Imtenan, and actual verification. [OUTCOMES.json](docs/exclusion-investigation/OUTCOMES.json) contains generated counts and overlapping route totals for seed 2171, as-of 2026-11-01. They are demonstration design, not prevalence.
-
-## Architecture and main functions
-
-The Decision Brief and review-readiness milestone (explanation/mapping v1.1.0) adds a shared, versioned explanation at `analysis.explanations[patientId]`. Patient Review now leads with a concise five-part brief, exact recorded-versus-computed reasons, dated facts, evidence supporting reconsideration/retention, remaining blockers and a specific next action. The same object is used by the HTML/JSON report. Decisive independent failures drive the headline and action, actual matching measurement dates are retained, and the next action appears beside the conclusion. Detailed clinical profiles and the existing attention index remain available on expansion.
-
-Decision Review starts with **FDA Guidance Alignment & Review Readiness**: six application review questions linked to inspected FDA passages, independent documentation/reviewer statuses, open questions and rationale-required actual annotations. Source verification never creates a substantive review or changes eligibility. The existing decision trace and actual actions remain one disclosure away. Review drafts survive trace inspection; recorded actions retain actor, timestamp, versions, rationale and before/after context.
-
-Trial Strategy defaults to two linked charts: the eligibility flow with a visible exact-count transition matrix and current exclusion reasons. **Population composition** separates group composition from within-group matching, including unknown/not-collected data. Every case pack also exposes composition from a recorded clinical field; the expanded cohort includes its collected gender categories. **Patient × criterion** provides paginated actual results, explicit not-applicable labels, and input/evidence inspection. Every chart drill-down uses exact patient IDs in the existing shared filter; a proposed-preview selection leaves the active scenario unchanged. Unconfigured scenarios are labelled explicitly. See the [complete Decision Review handoff](docs/decision-review/HANDOFF.md) for exact demo navigation, inspected passages, screenshots, reviewer questions and verification.
-
-- `src/clinical-fixture.js`: `clinicalConfig` and the reduced supplied `demoCase`; all executable thresholds, units, criterion definitions, rule versions, evidence references, and scenario approval states.
-- `src/cohort.js`: pure `resolveScenario(config, requested)`, `evaluatePatient(patient, requested, config)`, and `evaluateCohort(patients, requested, config)`. `requested` is `false`, `true` (approved renal scenario), or an explicit predefined scenario ID.
-- `src/patients.js`: `anchorPatients` preserves the 20 supplied cases, adding an explicit synthetic renal-stability assumption. `generateCohort(count=120, seed=217)` remains only for legacy engine regressions; the UI uses the separate profile-based showcase generator.
-- `src/data.js`: editable product/study narrative, review copy, and source-display metadata. It adapts the structured fixtures for the existing workspace.
-- `src/explorer.js` / `src/explorer.css`: population comparison, evidence-gate states, boundary explorer, and patient-level criterion audit.
-- `src/ranking.js`: `scoreReviewAttention`, `getReviewProfile`, and `rankCandidates`, a pure review layer after eligibility.
-- `src/review-fixture.js`: editable index formula, coefficients, six profile dimensions, disclaimers, and expert-review task copy transcribed from the supplied fictional case.
-- `src/patient-review.js` / `src/patient-review.css`: ranked table, status groups, selected-patient profile, evidence pathway, and review tasks.
-- `src/case-pack-metadata.js` / `src/case-packs.js`: supplied case metadata, separately authored fictional anchors, deterministic variants and source-availability registry.
-- `src/decision-brief.js`: deterministic explanations, raw fact/rule/source bindings, blockers and bounded next actions shared by views/reports.
-- `src/guidance-sources.js` / `src/guidance-review.js`: inspected primary-source metadata/passages and independent documentation/review status.
-- `src/review-views.js` / `src/review.css`: Decision Brief, guidance matrix, review forms, source/criterion drawers and progressive disclosure.
-- `src/analysis-model.js` / `src/analysis-views.js`: exact linked patient sets, exclusion counts, separate composition denominators and criterion matrix.
-- `src/investigation.js`: case-scoped adapters into the unchanged eligibility engine, investigation routes and separate readiness.
-- `src/investigation-views.js`: additive patient, evidence, strategy, decision and report content.
-- `src/workspace.js`: immutable runs, shared study/dataset/scenario identity, age/demographic/subgroup metrics, AND filters, pagination, scratch validation, working versions and run-scoped actual review annotations.
-- `src/inspection.js` / `src/composition.js`: exact composition counts, category-linked inspection, clinical missingness, provenance and reusable review controls.
-- `src/synthetic-config.js` / `src/synthetic-cohort.js`: editable versioned assumptions and deterministic independent generation.
-- `tests/showcase.test.js` / `tests/theme.test.js`: generator coherence, identities/dates, demographic independence, reconciliation, linked reports/tools, selected-dataset Reset and token contrast.
-- `src/studio.js` / `src/studio.css`: persistent shell, connected perspective controls, evidence/profile/tool dialogs, keyboard/focus continuity, responsive and print flow.
-- `src/studio-patient.js` / `src/studio-patient.css`: patient queue, original/proposed criteria, factor contributions, evidence applicability, next review and structured synthetic-profile form.
-- `src/population-layout.js`: deterministic clinical group registry, ranked/filtered group membership, accessible page capacity and actual scenario-transfer summaries.
-- `src/ring-geometry.js`: preallocated capped, rounded band geometry and exact filtered-color boundaries.
-- `src/population-stage.js` / `src/constellation.css`: proportional ring, paged patient spheres, exact picking, keyboard navigation, patient location, Motion transitions, idle pause and equivalent 2D fallback. `src/constellation.js` preserves the scene entry point.
-- `src/studio-views.js`: trial composition, source-to-decision trace, current-state review packet and JSON export. `src/study-tools.js` preserves the original study/criterion/boundary tools.
-- `tests/cohort.test.js`: deterministic examples, boundaries, adversarial evidence/config cases, provenance and reproducibility checks, and exhaustive condition combinations.
-- `tests/ranking.test.js`: exact index/ranking regressions, ties, cap and configuration changes, missing context, profiles, review steps, and eligibility separation.
-
-The engine evaluates every criterion without short-circuiting. `FAIL` makes the aggregate excluded; if none fail, `UNKNOWN` makes it indeterminate; only all `PASS` yields meets modeled criteria. Unknown results remain in the audit even when an independent failure already excludes the record.
-
-A proposed scenario either passes the full gate or falls back to the complete original protocol. Fixed restrictions are never replaced. Each changed criterion records original/current results, original/current rule IDs, reason, and supporting source IDs. Overall `statusChanged` and `newlyEligible` are separate. The reviewer-attention index is computed only after all proposed eligibility criteria pass and the record is newly matching. It cannot alter any clinical classification. No language-model-generated eligibility logic is used.
-
-## Rule and evidence configuration
-
-Rules use an allowlisted declarative format, not executable strings:
-
-```js
-{
-  id: 'renal-original-v1', version: '1.0.0', criterionId: 'RENAL',
-  field: 'egfr_ml_min_1_73m2', operator: 'gte',
-  value: thresholds.renalOriginalMin, min: 0,
-  unit: 'mL/min/1.73 m²', sourceIds: ['SYN-PK-01', 'SYN-PK-02']
-}
-```
-
-Supported predicates: `gte`, `lte`, `in`, `equals`, and nested `all` / `any`. Values are strictly typed; missing, contradictory, invalid, or explicitly mismatched-unit observations produce `UNKNOWN`. No automatic clinical unit conversion is performed. Unchanged criteria retain the protocol's original rule IDs.
-
-```js
-{
-  id: 'renal-revision', version: '1.0.0',
-  status: 'approved-demo', syntheticOnly: true,
-  revisions: [{
-    criterionId: 'RENAL', ruleId: 'renal-revised-v1',
-    evidenceIds: ['SYN-PK-01', 'SYN-PK-02']
-  }]
-}
-```
-
-Evidence must exist in the registry, have `status: 'supporting'`, be drug-specific fixture evidence, and list the exact rule in `supportsRuleIds`. Every evidence reference required by the rule must be supplied. Missing, insufficient, conflicting, ambiguous, unversioned, or unsupported configurations withhold execution. General FDA guidance cannot substitute for drug-specific evidence.
-
-Workflow labels remain distinct: **Approved demonstration rule**, **Evidence-supported draft change**, and **Awaiting medical review**. Approval means synthetic demonstration only, never clinical approval.
-
-## For Ehsan and Imtenan
-
-Edit `src/clinical-fixture.js` to review or replace:
-
-- Renal boundary and standard units; adult inclusion and ECOG categories.
-- Hepatic categories and cardiac/medication restrictions.
-- The renal-stability definition and the added stability assumption on anchor cases.
-- Evidence sufficiency, rule-to-evidence links, scenario approval, and monitoring requirements.
-- The clinical meaning and scope of every input field. Disease, prior-treatment, and consent conditions remain explicit study-scope assumptions rather than independently verified data.
-
-`src/patients.js` preserves the reference case; `src/synthetic-config.js` contains expanded generation assumptions; `src/data.js` contains narrative/source presentation. Update fixtures and tests together when expected outcomes intentionally change. The original `cohort_syn217_starter/syn217_demo_case.json` material is preserved as the initial case source of truth. Its illustrative attention index is now implemented only as an unvalidated reviewer-attention measure, never an eligibility rule or toxicity probability.
-
-The official guidance references provide general context, not proof supporting SYN-217 rules. The drawer identifies registry paraphrases and missing document versions/passage identifiers honestly. Ehsan and Imtenan must verify source status and applicability before real claims. SYN-217 evidence is fabricated and cannot establish real treatment safety.
-
-### The renal-stability distinction
-
-The supplied raw JSON has no longitudinal renal-stability field. The pre-existing adapter in `src/patients.js` assigns `renal_stable: true` to anchor cases to reproduce the established modeled scenario. This milestone preserves that rule and regression adapter, labels its provenance, and separately states that evidence applicability is not established. Evaluating raw records without the adapter is a different input and yields a different result. New synthetic drafts use explicit yes/no/unknown stability and never inherit the assumption.
-
-## Illustrative ranking configuration
-
-`src/review-fixture.js` contains all index inputs. The supplied formula is renal **12 + (60 − eGFR)** for the fixture window **45 ≤ eGFR < 60**, ECOG 1 **+5**, mild hepatic impairment **+8**, controlled hypertension **+3**, stable type 2 diabetes **+5**, stable cardiac history **+10**, capped at **100**. Age contributes no points. These are arbitrary demonstration coefficients, not validated medical risk weights.
-
-`rankCandidates(cohort)` includes only newly matching records with an active approved demonstration rule, explicit passing criterion results, and complete index context. Excluded, indeterminate, originally matching, and unsupported-scenario records remain unranked. Missing or contradictory contextual fields withhold the score; they are never imputed as zero. Unscored newly matching records remain visible for further context review. Equal indices use natural numeric patient-ID order, then exact ID text, independent of input order.
-
-`getReviewProfile(record)` returns index components, six fact-based dimensions, the original exclusion reasons, supporting evidence references, and fixture-based review tasks. It preserves the actual `criterionResult` separately when a profile dimension needs more context. Scores are not calibrated, do not predict drug toxicity, and cannot independently approve enrollment.
-
-## Verification and limits
-
-Current case-pack selection verification: **204 tests passed**, including four new checks covering all eight packs, exact patient/filter/export agreement, empty groups, linked chart selections and the five configured renal matches. **93 Chrome browser checks passed**, with no runtime errors, across all eight packs and all three perspectives, keyboard navigation, 375×812 phone, 812×375 landscape and 768×1024 tablet layouts, reduced motion and preservation of the 20/500-record interfaces. Syntax checks and the production build passed. Clinical rules, fixtures and scoring were not changed.
-
-The additive Exclusion Investigation milestone passed 23 focused case tests plus all 120 existing tests, 77 development-browser workflow checks, and 12 separately served static-build browser checks. The browser checks exercised all eight packs, including source inspection, linked filters, mobile navigation, actual demo annotations, HIV/ACCESS/PREG JSON downloads and preservation of the original reference ranking. Original research-note text and primary bibliography remain unavailable/unverified; no clinical acceptance or approval is established. See the case handoff for the detailed scope.
-
-`npm test`: **177 passed, 0 failed**, retaining all 152 prior regressions and 1,260 exhaustive condition combinations. The 25 new checks cover all 920 existing records' fact/rule/source traceability, exact recorded-versus-computed reasons, independent failures/unknowns, unconfigured proposals, support/consent/pregnancy separation, evidence coverage and provenance, rationale-required reviews, before/after version context, chart-to-patient IDs, both composition denominators and report agreement. No clinical rule, generator, scoring fixture or reference ranking was changed. Two chart presentation assertions now target the retained criterion component/new matrix because the default analytical chart pair changed. `npm run check` syntax-checks every source module; `npm run build` creates the static bundle. No separate lint task is configured.
-
-The Decision Review milestone passed **57 development-browser checks** and **20 independently served production-build checks**, with no runtime errors. Coverage includes reconsideration, retained restrictions, missing information, accommodation, unresolved guidance, draft preservation, exact chart navigation, report download, print overflow, reduced motion and matrix pagination at 1440×1000, 768×1024 and 375×812. The source mappings use the FDA participation guidance (December 2025, printed pp. 4–6, 8) and electronic-records guidance (October 2024, Q12, printed p. 13). The [handoff and inspected screenshots](docs/decision-review/HANDOFF.md) document the working flow. The original secondary note and real drug-specific evidence remain unavailable/unverified; source inspection is separate from clinical applicability or qualified regulatory review.
-
-The chart refinement passed **61 development-browser workflow checks** across all ten datasets at 1440×900, 1280×800, 768×1024 and 375×812, plus **14 independently served static-build checks**. Checks include outcome/route filtering, exact flow counts, preview/active labels, keyboard criterion inspection and Escape dismissal, missing-snapshot segments, readiness separation, report download, rapid scenario changes and reduced motion. The static checks also verify exact criterion focus, settling an in-flight animation when reduced motion is enabled, compact feedback and the missing-Motion-bundle fallback. No runtime errors occurred in the completed normal-runtime flows; deliberately blocked Motion loading was tested separately. Local scripts, screenshots and downloaded packets are under ignored `output/playwright/`.
-
-Chrome 157 ring verification passed **47 browser workflow checks** across the development server and an independently served static build at 1440×900 desktop, 1280×800 laptop and 375×812 mobile. Checks covered all 80 new-match sphere pages, exact reference ranking, queue search/focus/keyboard commit behavior, page/scroll preservation, linked filtering, scenario reversal, 20/500 switching, Reset, Trial/Decision perspective continuity, mobile return paths and detail stepping, empty states, canvas picking, interrupted Motion, reduced motion, idle/hidden rendering, SVG 2D switching, automatic no-WebGL fallback and a missing Motion bundle. No runtime errors occurred in either final normal-runtime flow. Intentional WebGL/Motion blocking was tested separately. Existing clinical, report and scratch-profile regressions remain covered by the test suite. Screenshots and QA scripts are under ignored `output/playwright/`. This is not a full accessibility certification or cross-browser/device benchmark.
-
-
-Three.js and Motion are MIT-licensed; their licenses ship in `dist/vendor/LICENSE` and `dist/vendor/MOTION-LICENSE.md`. All scene geometry is generated locally. There are no remote models, fonts or other licensed visual assets on the critical path.
-
-No real clinical validation, adverse-event prediction, live model activity, real patient data, or independent enrollment approval is provided. Qualified medical and regulatory review is required for any real-world use.
+Ehsan must validate real protocol requirements, drug evidence, laboratory interpretation and participation procedures. Imtenan must assess guidance applicability and recordkeeping requirements. No clinical validation, authenticated production review storage, full cross-browser/accessibility certification or real enrollment capability is established. Original secondary research-note text remains unavailable; none has been reconstructed.

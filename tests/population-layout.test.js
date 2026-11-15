@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { getPopulationGroups, getFocusPageLayout, getFocusPage, getGroupTransfers, getRingSegments } from '../src/population-layout.js';
 import { createWorkspace, visibleRecords } from '../src/workspace.js';
 
-const workspace = createWorkspace();
+const workspace = createWorkspace({dataset:'expanded'});
 const before = workspace.run;
 workspace.setScenario('renal-revision');
 const run = workspace.run;
@@ -98,7 +98,7 @@ test('ring uses whole-cohort proportions; filtered fractions never resize the po
 });
 
 test('reference ring reconciles exact counts and filtered matching fractions', () => {
-  const w = createWorkspace(); w.setDataset('casebook');
+  const w = createWorkspace({dataset:'expanded'}); w.setDataset('casebook');
   assert.deepEqual(getRingSegments(getPopulationGroups(w.run)).map(s => s.total), [4, 0, 15, 1]);
   w.setScenario('renal-revision');
   const full = getRingSegments(getPopulationGroups(w.run));

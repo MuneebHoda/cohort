@@ -1,3 +1,6 @@
+import { unifiedProtocol, unifiedSettings } from './unified-protocol.js';
+import { generateUnifiedCohort, validateUnifiedProfile, evaluateUnifiedCohort } from './unified-cohort.js';
+import { buildUnifiedRun } from './unified-analysis.js';
 import { clinicalConfig } from './clinical-fixture.js';
 import { anchorPatients } from './patients.js';
 import { generateShowcase } from './synthetic-cohort.js';
@@ -23,6 +26,7 @@ export const reviewActions = [
   ['retain-restriction', 'Retain current restriction'], ['reviewer-note', 'Record reviewer note'],
 ];
 export const datasetDefinitions = {
+  unified:{id:'unified',unified:true,label:'SYN-217 · One unified trial',shortLabel:'Unified cohort',baselineCount:500,version:'unified-v1.0.0-seed217',initialPatientId:'SYN-0001',seed:217,asOfDate:unifiedSettings.asOfDate,configVersion:'1.0.0'},
   casebook: { id: 'casebook', label: 'Reference case — 20 synthetic patients', shortLabel: 'Reference case', baselineCount: 20, version: 'casebook-v1', initialPatientId: 'P03', seed: null, asOfDate: null, configVersion: '1.0.0' },
   expanded: { id: 'expanded', label: `Expanded cohort — ${showcaseConfig.count} synthetic patients`, shortLabel: 'Expanded cohort', baselineCount: showcaseConfig.count, version: `expanded-v${showcaseConfig.version}-seed${showcaseConfig.seed}`, initialPatientId: 'SYN-0001', seed: showcaseConfig.seed, asOfDate: showcaseConfig.asOfDate, configVersion: showcaseConfig.version },
   ...Object.fromEntries(Object.values(casePackDefinitions).map(pack => [`case-${pack.id.toLowerCase()}`, { id: `case-${pack.id.toLowerCase()}`, casePackId: pack.id, label: `${pack.id} — ${pack.title}`, shortLabel: pack.title, baselineCount: 6 + investigationSettings.variantsPerPack, version: `case-${pack.id}-v${investigationSettings.version}`, initialPatientId: `${pack.id}-A`, seed: investigationSettings.seed, asOfDate: investigationSettings.asOfDate, configVersion: investigationSettings.version }])),
@@ -53,9 +57,10 @@ function groups(patients, original, proposed, definitions) {
   });
 }
 
-function finishRun(run) { attachDecisionBriefs(run); run.chartGroups = buildAnalysisGroups(run); return freeze(run); }
+function finishRun(run) { if (!run.unified) attachDecisionBriefs(run); run.chartGroups = buildAnalysisGroups(run); return freeze(run); }
 function makeRun(id, datasetVersion, scenarioId, patients, dataset) {
   const records = clone(patients);
+  if (dataset.unified) return finishRun(buildUnifiedRun({id,datasetVersion,scenarioId,patients:records,dataset}));
   if (dataset.casePackId) {
     const result = evaluateInvestigationPack(records, dataset.casePackId, scenarioId);
     const ageGroups = groups(records, result.original, result.proposed, ageDefinitions.map(([key, label]) => [key, label, record => ageFor(record) === key]));
@@ -94,7 +99,7 @@ export function visibleRecords(run, filters = {}) {
   const records = status === 'new' ? [...run.ranked, ...ordered.filter(record => record.newlyEligible && !rankedIds.has(record.id))] : ordered;
   return records.filter(record => (status === 'all' || status === 'new' || status === 'changed' && record.statusChanged || record.status === status)
     && (age === 'all' || ageFor(record) === age) && (!subgroupIds || subgroupIds.has(record.id))
-    && (demographic === 'all' || demographicGroup(record, demographicField) === demographicValue)
+    && (demographic === 'all' || run.demographics.find(d=>d.id===demographicField)?.groups.find(g=>g.id===demographicValue)?.ids.includes(record.id))
     && String(record.id).toLowerCase().includes(String(query).trim().toLowerCase()));
 }
 
@@ -135,7 +140,8 @@ export function validateProfile(draft, existingRecords = []) {
   return { valid: Object.keys(errors).length === 0, record, errors };
 }
 
-export function evaluateDraft(draft, existingRecords = []) {
+export function evaluateDraft(draft, existingRecords = [], unified = false) {
+  if(unified){ const result=validateUnifiedProfile(draft,existingRecords); if(!result.valid)return {...result,original:null,proposed:null,profile:null}; const original=evaluateUnifiedCohort([result.record]).records[0],proposed=evaluateUnifiedCohort([result.record],'proposed-inclusive').records[0];return {...result,original,proposed,profile:getReviewProfile(proposed)}; }
   const result = validateProfile(draft, existingRecords);
   if (!result.valid) return { ...result, original: null, proposed: null, profile: null };
   const original = { ...result.record, ...evaluatePatient(result.record, false) };
@@ -143,14 +149,14 @@ export function evaluateDraft(draft, existingRecords = []) {
   return { ...result, original, proposed, profile: getReviewProfile(proposed) };
 }
 
-export function createWorkspace({ dataset = 'expanded' } = {}) {
+export function createWorkspace({ dataset = 'unified' } = {}) {
   if (!datasetDefinitions[dataset]) throw new TypeError('Unknown synthetic dataset.');
   const bases = {};
-  const baseFor = id => bases[id] ||= datasetDefinitions[id].casePackId ? generateCasePack(datasetDefinitions[id].casePackId) : id === 'casebook' ? clone(anchorPatients) : generateShowcase();
+  const baseFor = id => bases[id] ||= id === 'unified' ? generateUnifiedCohort() : datasetDefinitions[id].casePackId ? generateCasePack(datasetDefinitions[id].casePackId) : id === 'casebook' ? clone(anchorPatients) : generateShowcase();
   const additions = Object.fromEntries(Object.keys(datasetDefinitions).map(id => [id, []]));
   const revisions = Object.fromEntries(Object.keys(datasetDefinitions).map(id => [id, 0]));
   const subscribers = new Set();
-  let state = freeze({ studyId: study.id, perspective: 'patient', selectedPatientId: datasetDefinitions[dataset].initialPatientId, selectedEvidenceId: null, scenarioId: 'original', scenarioVersion: clinicalConfig.protocol.version, dataset, datasetVersion: datasetDefinitions[dataset].version, analysisRunId: '', filters: filtersInitial(), detailTab: 'overview', queuePage: 0, compositionDimension: dataset === 'casebook' ? 'age' : 'sex', reviewDispositions: {} });
+  let state = freeze({ studyId: study.id, perspective: 'patient', selectedPatientId: datasetDefinitions[dataset].initialPatientId, selectedEvidenceId: null, scenarioId: 'original', scenarioVersion: clinicalConfig.protocol.version, dataset, datasetVersion: datasetDefinitions[dataset].version, analysisRunId: '', filters: filtersInitial(), detailTab: 'overview', queuePage: 0, compositionDimension: dataset === 'unified' ? 'gender' : dataset === 'casebook' ? 'age' : 'sex', reviewDispositions: {} });
   let runs = freeze([]);
   let events = freeze([]);
   let run;
@@ -182,7 +188,7 @@ export function createWorkspace({ dataset = 'expanded' } = {}) {
     const selected = selectionCompatible ? state.selectedPatientId : initial || filteredRecords[0]?.id || null;
     const visible = visibleRecords(run, state.filters);
     const selectedIndex = visible.findIndex(record => record.id === selected);
-    update({ studyId: run.studyId, analysisRunId: run.id, selectedPatientId: selected, queuePage: selectedIndex < 0 ? 0 : Math.floor(selectedIndex / queuePageSize), scenarioVersion: run.current.gate.scenarioVersion || clinicalConfig.protocol.version });
+    update({ studyId: run.studyId, analysisRunId: run.id, selectedPatientId: selected, queuePage: selectedIndex < 0 ? 0 : Math.floor(selectedIndex / queuePageSize), scenarioVersion: run.current.gate.scenarioVersion || run.protocol?.version || clinicalConfig.protocol.version });
     const affectedIds = previous ? run.current.records.filter(record => {
       const prior = previous.current.records.find(item => item.id === record.id);
       return !prior || prior.status !== record.status || prior.evaluations.some((evaluation, index) => evaluation.result !== record.evaluations[index]?.result);
@@ -204,10 +210,10 @@ export function createWorkspace({ dataset = 'expanded' } = {}) {
       if (Object.keys(filters).some(key => filters[key] !== state.filters[key])) { update({ filters, queuePage: 0, selectedPatientId: state.selectedPatientId || visibleRecords(run, filters)[0]?.id || null }); notify(); }
     },
     setQueuePage(page) { const maximum = Math.max(0, Math.ceil(visibleRecords(run, state.filters).length / queuePageSize) - 1); if (!Number.isInteger(page) || page < 0 || page > maximum) throw new RangeError('Unknown patient table page.'); if (page !== state.queuePage) { update({ queuePage: page }); notify(); } },
-    setCompositionDimension(field) { if (field !== 'age' && !demographicDefinitions.some(item => item.id === field)) throw new TypeError('Unknown composition dimension.'); if (field !== state.compositionDimension) { update({ compositionDimension: field }); notify(); } },
+    setCompositionDimension(field) { if (field !== 'age' && !run.demographics.some(item => item.id === field)) throw new TypeError('Unknown composition dimension.'); if (field !== state.compositionDimension) { update({ compositionDimension: field }); notify(); } },
     setScenario(id, activity = {}) {
       if (run.casePack && id !== 'original' && !(run.casePack.id === 'RENAL' && id === 'renal-revision')) throw new TypeError('A proposed medical scenario requires case-specific configuration.');
-      if (id !== 'original' && !clinicalConfig.scenarios.some(scenario => scenario.id === id)) throw new TypeError('Unknown scenario.');
+      if (id !== 'original' && !(run.protocolConfig || clinicalConfig).scenarios.some(scenario => scenario.id === id)) throw new TypeError('Unknown scenario.');
       if (id === state.scenarioId) return;
       const priorScenarioId = state.scenarioId;
       update({ scenarioId: id }); analyze('scenario-changed', id === 'original' ? 'Restored original protocol rules.' : 'Requested the predefined synthetic scenario; evidence gates determine whether its rule is applied.', { priorScenarioId, newScenarioId: id, ...(activity.activity==='presentation'?{activity:'presentation',presentationSessionId:activity.presentationSessionId,actor:'Presentation playback'}:{}) }); notify();
@@ -215,7 +221,7 @@ export function createWorkspace({ dataset = 'expanded' } = {}) {
     setDataset(value, activity = {}) {
       if (!Object.hasOwn(datasetDefinitions, value)) throw new TypeError('Unknown synthetic dataset.');
       if (value === state.dataset) return;
-      const caseChanged = Boolean(datasetDefinitions[value].casePackId || run.casePack);
+      const caseChanged = Boolean(datasetDefinitions[value].casePackId || run.casePack || datasetDefinitions[value].unified || run.unified);
       update({ dataset: value, datasetVersion: additions[value].length ? `${datasetDefinitions[value].version}-working-${revisions[value]}` : datasetDefinitions[value].version, ...(caseChanged ? { scenarioId: 'original', filters: filtersInitial(), compositionDimension: 'age' } : {}) });
       analyze('dataset-changed', `Opened ${datasetDefinitions[value].label}.`, activity.activity==='presentation'?{activity:'presentation',presentationSessionId:activity.presentationSessionId,actor:'Presentation playback'}:{}); notify();
     },
@@ -223,7 +229,7 @@ export function createWorkspace({ dataset = 'expanded' } = {}) {
     setEvidence(idOrNull) { if (idOrNull !== null && !run.evidenceRegistry.some(source => source.id === idOrNull)) throw new TypeError('Unknown evidence ID.'); if (idOrNull !== state.selectedEvidenceId) { update({ selectedEvidenceId: idOrNull }); notify(); } },
     addProfile(draft) {
       if (run.casePack) throw new TypeError('Profile authoring is not configured for this case pack.');
-      const result = validateProfile(draft, run.patients);
+      const result = run.unified ? validateUnifiedProfile(draft,run.patients) : validateProfile(draft, run.patients);
       if (!result.valid) { const error = new Error('The synthetic profile contains invalid fields.'); error.errors = result.errors; throw error; }
       additions[state.dataset].push(clone(result.record));
       revisions[state.dataset] += 1;
@@ -235,7 +241,7 @@ export function createWorkspace({ dataset = 'expanded' } = {}) {
       if (![...reviewActions.map(([id]) => id), ...(run.casePack ? routeDefinitions.map(([id])=>id) : []), 'reviewed', 'further-review'].includes(disposition)) throw new TypeError('Unknown review disposition.');
       if (typeof reason !== 'string' || !reason.trim()) throw new TypeError('A review rationale is required.');
       const prior = state.reviewDispositions[`${state.dataset}/${run.id}/${patientId}`] || null;
-      const activeMedicalStatus = run.current.records.find(record => record.id === patientId).status;
+      const activeMedicalStatus = run.current.records.find(record => record.id === patientId).medicalStatus || run.current.records.find(record => record.id === patientId).status;
       const event = log('disposition-recorded', reason.trim(), [patientId], { patientId, disposition, before: {disposition:prior?.disposition||null,activeMedicalStatus}, after: { disposition, reason: reason.trim(), activeMedicalStatus } });
       update({ reviewDispositions: { ...state.reviewDispositions, [`${state.dataset}/${run.id}/${patientId}`]: { runId: run.id, eventId: event.id, disposition, reason: event.reason, timestamp: event.timestamp } } });
       notify(); return event;
@@ -245,7 +251,7 @@ export function createWorkspace({ dataset = 'expanded' } = {}) {
       if (!row || !guidanceReviewStatuses.some(([id]) => id === status)) throw new TypeError('Unknown patient, guidance topic or review status.');
       if (![rationale, evidenceNotes].every(value => typeof value === 'string' && value.trim() && value.length <= 1200)) throw new TypeError('A rationale and the evidence or information actually considered are required (up to 1200 characters each).');
       const key = guidanceReviewKey(run, patientId, topicId);
-      const activeMedicalStatus = run.current.records.find(record=>record.id===patientId).status;
+      const activeMedicalStatus = run.current.records.find(record=>record.id===patientId).medicalStatus || run.current.records.find(record=>record.id===patientId).status;
       const after = { status, rationale: rationale.trim(), evidenceNotes: evidenceNotes.trim(), documentationStatus: row.documentationStatus, activeMedicalStatus };
       const event = log('guidance-review-recorded', after.rationale, [patientId], { patientId, topicId, before: {...(row.actualReview || { status: row.reviewStatus, documentationStatus: row.documentationStatus }),activeMedicalStatus}, after });
       update({ guidanceReviews: { ...state.guidanceReviews, [key]: { ...after, actor: event.actor, authenticated: false, timestamp: event.timestamp, eventId: event.id, runId: run.id } } });

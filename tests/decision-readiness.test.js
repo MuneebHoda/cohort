@@ -38,7 +38,7 @@ test('every explanation fact, rule, version and evidence reference resolves to t
 test('decision briefs stay concise and expose five specific sections instead of a thinking sequence', () => {
   for(const dataset of Object.keys(datasetDefinitions)){
     const w=createWorkspace({dataset});
-    for(const scenario of ['original',...(w.run.proposed.available!==false?['renal-revision']:[])]){
+    for(const scenario of ['original',...(w.run.proposed.available!==false?[w.run.unified?'proposed-inclusive':'renal-revision']:[])]){
       w.setScenario(scenario);
       for(const brief of Object.values(w.run.explanations)){
         const words=[brief.conclusion,brief.reason,...brief.sections.map(section=>section.summary)].join(' ').split(/\s+/).length;
@@ -66,7 +66,7 @@ test('the retained independent restriction drives the headline and action before
 });
 
 test('briefs retain actual measurement dates and do not invent dates for unmatched observations', () => {
-  const w=createWorkspace(),record=w.run.current.records.find(item=>item.measurements?.length);
+  const w=createWorkspace({dataset:'expanded'}),record=w.run.current.records.find(item=>item.measurements?.length);
   assert.equal(w.run.explanations[record.id].facts.find(fact=>fact.field==='egfr_ml_min_1_73m2').date,record.measurements[0].date);
   const changed=structuredClone(record);changed.measurements[0].value+=1;
   assert.equal(buildDecisionBrief(w.run,changed).facts.find(fact=>fact.field==='egfr_ml_min_1_73m2').date,null);

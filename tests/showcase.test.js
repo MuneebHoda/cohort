@@ -112,8 +112,8 @@ test('composition groups reconcile screened and matching denominators with uniqu
   }
 });
 
-test('the default workspace is the 500-record showcase and presentation changes preserve its run', () => {
-  const workspace = createWorkspace(); const run = workspace.run;
+test('the archived expanded workspace is the 500-record showcase and presentation changes preserve its run', () => {
+  const workspace = createWorkspace({dataset:'expanded'}); const run = workspace.run;
   assert.equal(run.current.total, records.length);
   assert.equal(workspace.state.studyId, 'DEMO-SYN217-03');
   workspace.setScenario('renal-revision'); const active = workspace.run;
@@ -125,7 +125,7 @@ test('the default workspace is the 500-record showcase and presentation changes 
 });
 
 test('dataset changes explicitly reconcile incompatible demographic and patient-ID selections', () => {
-  const workspace = createWorkspace(); workspace.setFilters({ demographic: 'sex:female', query: 'SYN-03' });
+  const workspace = createWorkspace({dataset:'expanded'}); workspace.setFilters({ demographic: 'sex:female', query: 'SYN-03' });
   workspace.setDataset('casebook');
   assert.equal(workspace.state.filters.demographic, 'all'); assert.equal(workspace.state.filters.query, '');
   assert.ok(workspace.run.patients.some(record => record.id === workspace.state.selectedPatientId));
@@ -137,7 +137,7 @@ test('dataset changes explicitly reconcile incompatible demographic and patient-
 });
 
 test('reset restores the selected dataset baseline and preserves the other dataset working copy', () => {
-  const workspace = createWorkspace(); const draft = { ...records.find(record => record.age_years), id: 'ADDED500' };
+  const workspace = createWorkspace({dataset:'expanded'}); const draft = { ...records.find(record => record.age_years), id: 'ADDED500' };
   workspace.addProfile(draft); assert.equal(workspace.run.current.total, 501);
   workspace.setDataset('casebook'); workspace.addProfile({ ...draft, id: 'ADDED20' });
   workspace.setDataset('expanded'); workspace.reset();
@@ -148,7 +148,7 @@ test('reset restores the selected dataset baseline and preserves the other datas
 });
 
 test('review actions are actual annotations scoped to dataset, run and patient, never clinical analysis changes', () => {
-  const workspace = createWorkspace(); const run = workspace.run; const patientId = workspace.state.selectedPatientId;
+  const workspace = createWorkspace({dataset:'expanded'}); const run = workspace.run; const patientId = workspace.state.selectedPatientId;
   for (const [disposition] of reviewActions) workspace.recordDisposition({ patientId, disposition, reason: 'Inspect supplied synthetic evidence.' });
   assert.equal(workspace.run, run);
   const report = renderReport(workspace);
@@ -161,7 +161,7 @@ test('review actions are actual annotations scoped to dataset, run and patient, 
 });
 
 test('precise patient table pagination retains all 500 records and scene selection locates the correct page', () => {
-  const workspace = createWorkspace(); const all = visibleRecords(workspace.run, workspace.state.filters); const seen = [];
+  const workspace = createWorkspace({dataset:'expanded'}); const all = visibleRecords(workspace.run, workspace.state.filters); const seen = [];
   for (let page = 0; page < Math.ceil(all.length / queuePageSize); page++) {
     workspace.setQueuePage(page);
     const html = renderPatientQueue({ state: workspace.state, run: workspace.run, escape, icon });
@@ -180,7 +180,7 @@ test('500 scene markers remain unique, stable and reversible across clinical reg
 });
 
 test('scratch profiles and every chart/report use the correct active dataset without demographic penalties', () => {
-  const workspace = createWorkspace(); const run = workspace.run;
+  const workspace = createWorkspace({dataset:'expanded'}); const run = workspace.run;
   evaluateDraft({ id: 'DRAFT500', age_years: 65 }); assert.equal(workspace.run, run);
   workspace.setScenario('renal-revision'); workspace.setFilters({ demographic: 'ethnicity:hispanic' });
   const packet = buildReviewPacket(workspace);
@@ -194,7 +194,7 @@ test('scratch profiles and every chart/report use the correct active dataset wit
 });
 
 test('retained boundary explorer honors matching and classification-change filters', () => {
-  const workspace = createWorkspace(); workspace.setScenario('renal-revision');
+  const workspace = createWorkspace({dataset:'expanded'}); workspace.setScenario('renal-revision');
   for (const status of ['eligible', 'changed']) {
     workspace.setFilters({ status });
     const expected = visibleRecords(workspace.run, workspace.state.filters).length;
@@ -205,7 +205,7 @@ test('retained boundary explorer honors matching and classification-change filte
 });
 
 test('custom profile IDs cannot acquire the reference-case renal assumption by resembling an anchor', () => {
-  const workspace = createWorkspace(); workspace.addProfile({ ...records[0], id: 'P03' });
+  const workspace = createWorkspace({dataset:'expanded'}); workspace.addProfile({ ...records[0], id: 'P03' });
   const record = workspace.run.current.records.find(item => item.id === 'P03');
   assert.equal(record.inputProvenance.renalStabilityAssumed, false);
   const html = renderPatientDetail({ state: workspace.state, run: workspace.run, sources, config: clinicalConfig, escape, icon });

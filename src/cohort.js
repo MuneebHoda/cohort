@@ -9,9 +9,9 @@ const units = { age_years: 'Age', egfr_ml_min_1_73m2: 'eGFR', ecog: 'ECOG', hepa
 function validPredicate(predicate, depth = 0) {
   if (!object(predicate) || depth > 5) return false;
   if (['all', 'any'].includes(predicate.operator)) return array(predicate.conditions).length > 0 && predicate.conditions.every(child => validPredicate(child, depth + 1));
-  if (typeof predicate.field !== 'string' || !predicate.field || !['gte', 'lte', 'in', 'equals'].includes(predicate.operator)) return false;
+  if (typeof predicate.field !== 'string' || !predicate.field || !['gte', 'lte', 'lt', 'in', 'equals'].includes(predicate.operator)) return false;
   if (predicate.allowedValues !== undefined && (!Array.isArray(predicate.allowedValues) || !predicate.allowedValues.length || !predicate.allowedValues.every(scalar))) return false;
-  if (['gte', 'lte'].includes(predicate.operator) && (typeof predicate.value !== 'number' || !Number.isFinite(predicate.value))) return false;
+  if (['gte', 'lte', 'lt'].includes(predicate.operator) && (typeof predicate.value !== 'number' || !Number.isFinite(predicate.value))) return false;
   if (predicate.operator === 'in' && (!Array.isArray(predicate.value) || !predicate.value.length || !predicate.value.every(scalar))) return false;
   if (predicate.operator === 'equals' && !scalar(predicate.value)) return false;
   for (const bound of ['min', 'max']) if (predicate[bound] !== undefined && (typeof predicate[bound] !== 'number' || !Number.isFinite(predicate[bound]))) return false;
@@ -55,7 +55,7 @@ export function resolveScenario(config = clinicalConfig, requested = false) {
       if (array(config?.evidence).filter(item => item?.id === id).length > 1) reasons.push(`${criterion.title}: an evidence identifier has conflicting or ambiguous definitions.`);
       if (!source) reasons.push(`${criterion.title}: an evidence reference is not in the source registry.`);
       else if (source.status !== 'supporting') reasons.push(`${source.title || source.id}: evidence is ${source.status || 'missing'}, so the change is withheld.`);
-      else if (source.type !== 'fictional-drug-evidence') reasons.push(`${source.title || source.id}: general guidance cannot establish drug-specific support.`);
+      else if (source.type !== 'fictional-drug-evidence' && !(source.type === 'authored-demo-assumption' && config.syntheticOnly === true && config.protocol.syntheticOnly === true && source.fictional === true)) reasons.push(source.type === 'authored-demo-assumption' ? `${source.title || source.id}: authored assumptions require an explicitly synthetic protocol and scenario.` : `${source.title || source.id}: general guidance cannot establish drug-specific support.`);
       else if (!array(source.supportsRuleIds).includes(rule.id)) reasons.push(`${source.title || source.id}: evidence does not support the specified rule.`);
     }
   }
@@ -84,13 +84,13 @@ function evaluatePredicate(predicate, patient) {
   if (predicate.unit && patient.units?.[field] && patient.units[field] !== predicate.unit) return unknown('measurement unit does not match the configured rule.');
   if (!scalar(value)) return unknown('the supplied value is invalid.');
   if (predicate.allowedValues && !predicate.allowedValues.includes(value)) return unknown('the supplied value is outside the configured categories.');
-  const numeric = ['gte', 'lte'].includes(predicate.operator);
+  const numeric = ['gte', 'lte', 'lt'].includes(predicate.operator);
   if (numeric && (typeof value !== 'number' || !Number.isFinite(value))) return unknown('a finite numeric measurement is required; values are not coerced.');
   if ((predicate.min !== undefined && (typeof value !== 'number' || value < predicate.min)) || (predicate.max !== undefined && (typeof value !== 'number' || value > predicate.max))) return unknown('the supplied value is outside the configured measurement range.');
   if (predicate.operator === 'equals' && typeof value !== typeof predicate.value) return unknown('the supplied value has the wrong type.');
   if (predicate.operator === 'in' && !predicate.value.some(option => typeof option === typeof value)) return unknown('the supplied value has the wrong type.');
-  const passing = predicate.operator === 'gte' ? value >= predicate.value : predicate.operator === 'lte' ? value <= predicate.value : predicate.operator === 'in' ? predicate.value.includes(value) : value === predicate.value;
-  const expected = predicate.operator === 'gte' ? `≥${predicate.value}` : predicate.operator === 'lte' ? `≤${predicate.value}` : predicate.operator === 'in' ? predicate.value.join(' or ') : String(predicate.value);
+  const passing = predicate.operator === 'gte' ? value >= predicate.value : predicate.operator === 'lte' ? value <= predicate.value : predicate.operator === 'lt' ? value < predicate.value : predicate.operator === 'in' ? predicate.value.includes(value) : value === predicate.value;
+  const expected = predicate.operator === 'gte' ? `≥${predicate.value}` : predicate.operator === 'lte' ? `≤${predicate.value}` : predicate.operator === 'lt' ? `<${predicate.value}` : predicate.operator === 'in' ? predicate.value.join(' or ') : String(predicate.value);
   return { result: passing ? 'PASS' : 'FAIL', reason: `${label} ${String(value)} ${passing ? 'meets' : 'does not meet'} the configured requirement (${expected}${predicate.unit ? ` ${predicate.unit}` : ''}).`, value: { [field]: value }, unit: predicate.unit };
 }
 

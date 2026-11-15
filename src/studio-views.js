@@ -1,3 +1,5 @@
+import { exportUnifiedAnalysis } from './unified-analysis.js';
+import { renderUnifiedSummary, renderUnifiedDecision, renderUnifiedReport } from './unified-views.js';
 import { renderGuidanceReview, renderDecisionBrief, renderActionContext } from './review-views.js';
 import { getGuidanceRows, summarizeGuidance } from './guidance-review.js';
 import { renderInvestigationSummary, renderInvestigationAnalytics, renderInvestigationDecision, renderInvestigationReport } from './investigation-views.js';
@@ -17,6 +19,7 @@ const fieldNames = { age_years: 'Age · years', egfr_ml_min_1_73m2: 'eGFR · mL/
 
 export function renderContext(run, state) {
   const visible = visibleRecords(run, state.filters);
+  if(run.unified)return `<div class="context-data"><span class="unified-study-context"><strong>One SYN-217 trial</strong><span>${run.current.total} shared synthetic patients</span></span><span class="context-records"><small>${e(run.id)} · protocol v${e(run.protocol.version)}</small></span><button class="dataset-provenance" data-action="assumptions">Seed ${run.dataset.seed} · ${e(run.dataset.asOfDate)} ${icon('info')}</button></div><div class="context-filters"><span>${visible.length} of ${run.current.total} in view</span>${Object.entries(state.filters).filter(([key,value])=>value!==(key==='query'?'':'all')).map(([key,value])=>`<button class="active-filter-chip" data-clear-filter="${key}">${e(key==='subgroup'?[...run.subgroups,...run.chartGroups].find(g=>g.id===value)?.label||value:value)} ×</button>`).join('')}</div>`;
   const [field, category] = state.filters.demographic.split(':');
   const demographic = run.demographics.find(item => item.id === field);
   const activeFilters = [['status', state.filters.status !== 'all' && (state.filters.status === 'new' ? 'Newly matching' : state.filters.status === 'changed' ? 'Classification changed' : statusLabel[state.filters.status])], ['age', state.filters.age !== 'all' && run.ageGroups.find(group => group.id === state.filters.age)?.label], ['subgroup', state.filters.subgroup !== 'all' && [...run.subgroups,...run.chartGroups].find(group => group.id === state.filters.subgroup)?.label], ['demographic', demographic && `${demographic.label}: ${demographic.groups.find(group => group.id === category)?.label}`], ['query', state.filters.query && `ID: ${state.filters.query}`]].filter(([, label]) => label);
@@ -24,26 +27,27 @@ export function renderContext(run, state) {
 }
 
 export function renderCasePeopleControls(run, state) {
-  if (!run.casePack) return '';
+  if (!run.casePack && !run.unified) return '';
   const people = visibleRecords(run, state.filters);
-  const statuses = [['all', 'All medical results'], ['eligible', 'Meets modeled rules'], ['excluded', 'Excluded'], ['indeterminate', 'Indeterminate']];
+  const statuses = [['all', run.unified?'All inclusion results':'All medical results'], ['eligible', 'Meets modeled rules'], ['excluded', 'Excluded'], ['indeterminate', 'Indeterminate']];
   if (run.proposed.available || ['new', 'changed'].includes(state.filters.status)) statuses.push(['new', 'Newly matching'], ['changed', 'Classification changed']);
-  const routes = run.investigationSummary.routes;
+  const routes = run.unified ? run.subgroups : run.investigationSummary.routes;
   const linkedGroup = run.chartGroups.find(group => group.id === state.filters.subgroup);
   const selectedVisible = people.some(record => record.id === state.selectedPatientId);
   return `<section class="case-people-picker" aria-labelledby="case-people-heading">
     <div class="case-people-heading"><h2 id="case-people-heading">Choose people to inspect</h2><span role="status">${people.length} of ${run.current.total} people in view</span></div>
     <div class="case-people-fields">
-      <label for="case-status-filter">Medical result<select id="case-status-filter" data-case-status>${statuses.map(([id,label]) => `<option value="${id}" ${state.filters.status === id ? 'selected' : ''}>${e(label)} · ${visibleRecords(run, {...state.filters, status:id}).length}</option>`).join('')}</select></label>
-      <label for="case-route-picker">Review pathway<select id="case-route-picker" data-filter-route><option value="all" ${state.filters.subgroup === 'all' ? 'selected' : ''}>All review pathways · ${visibleRecords(run, {...state.filters, subgroup:'all'}).length}</option>${linkedGroup ? `<option value="${e(linkedGroup.id)}" selected>${e(linkedGroup.label)} · ${people.length}</option>` : ''}${routes.map(route => `<option value="${e(route.id)}" ${state.filters.subgroup === route.id ? 'selected' : ''}>${e(route.label)} · ${visibleRecords(run, {...state.filters, subgroup:route.id}).length}</option>`).join('')}</select></label>
+      <label for="case-status-filter">${run.unified?'Full inclusion result':'Medical result'}<select id="case-status-filter" data-case-status>${statuses.map(([id,label]) => `<option value="${id}" ${state.filters.status === id ? 'selected' : ''}>${e(label)} · ${visibleRecords(run, {...state.filters, status:id}).length}</option>`).join('')}</select></label>
+      <label for="case-route-picker">${run.unified?'Patient group':'Review pathway'}<select id="case-route-picker" data-filter-route><option value="all" ${state.filters.subgroup === 'all' ? 'selected' : ''}>${run.unified?'All patient groups':'All review pathways'} · ${visibleRecords(run, {...state.filters, subgroup:'all'}).length}</option>${linkedGroup ? `<option value="${e(linkedGroup.id)}" selected>${e(linkedGroup.label)} · ${people.length}</option>` : ''}${routes.map(route => `<option value="${e(route.id)}" ${state.filters.subgroup === route.id ? 'selected' : ''}>${e(route.label)} · ${visibleRecords(run, {...state.filters, subgroup:route.id}).length}</option>`).join('')}</select></label>
       <label for="case-patient-picker">Patient<select id="case-patient-picker" data-case-patient ${people.length ? '' : 'disabled'}><option value="" ${selectedVisible ? '' : 'selected'} disabled>${people.length ? 'Choose a patient in this group' : 'No people match these filters'}</option>${people.map(record => `<option value="${e(record.id)}" ${state.selectedPatientId === record.id ? 'selected' : ''}>${e(record.id)} · ${e(statusLabel[record.status])}</option>`).join('')}</select></label>
       <button id="case-show-people" class="studio-button primary" data-action="inspect-filtered" aria-haspopup="dialog" aria-controls="patient-queue-dialog" ${people.length ? '' : 'disabled'}>${icon('people')} Show ${people.length} ${people.length === 1 ? 'person' : 'people'} ${icon('arrow')}</button>
     </div>
-    <p>Filters update the population and patient list. Review pathways can overlap; selecting people does not change eligibility.${people.length ? '' : ' Clear filters to see all people.'} ${Object.entries(state.filters).some(([key,value]) => value !== (key === 'query' ? '' : 'all')) ? '<button data-action="clear-filters">Clear filters</button>' : ''}</p>
+    <p>Filters update the population and patient list. ${run.unified?'Groups overlap; all eight domains are evaluated for every person.':'Review pathways can overlap; selecting people does not change eligibility.'}${people.length ? '' : ' Clear filters to see all people.'} ${Object.entries(state.filters).some(([key,value]) => value !== (key === 'query' ? '' : 'all')) ? '<button data-action="clear-filters">Clear filters</button>' : ''}</p>
   </section>`;
 }
 
 export function renderSceneStory(run) {
+  if(run.unified)return '';
   const newly = run.current.records.filter(record => record.newlyEligible);
   const uncertain = run.current.records.filter(record => record.statusChanged && record.status === 'indeterminate');
   const examples = run.dataset.id === 'casebook' ? [['P03','Reference case'],['P06','Interaction restriction'],['P16','Missing hepatic status']] : [[run.proposed.records.find(record => record.newlyEligible)?.id,'Renal reconsideration'],[run.current.records.find(record => record.evaluations.some(value => value.criterionId === 'DDI' && value.result === 'FAIL'))?.id,'Interaction restriction'],[run.proposed.records.find(record => record.status === 'indeterminate')?.id,'Missing information']];
@@ -51,6 +55,7 @@ export function renderSceneStory(run) {
 }
 
 export function renderTrialSummary(run) {
+  if(run.unified)return renderUnifiedSummary(run,true);
   if (run.casePack) return renderInvestigationSummary(run);
   const delta = pct(run.proposed.eligible, run.original.total) - pct(run.original.eligible, run.original.total);
   return `<div class="perspective-heading"><div><span class="studio-eyebrow">TRIAL STRATEGY</span><h2>A wider modeled candidate pool.</h2><p>Compare coverage and composition within this synthetic screened dataset.</p></div><button class="studio-button" data-action="report">${icon('file')} Review packet</button></div>
@@ -63,6 +68,7 @@ export function renderTrialSummary(run) {
 }
 
 export function renderTrialAnalytics(run, state) {
+  if(run.unified)return renderComposition(run,state)+renderMissingness(run);
   if (run.casePack) return renderInvestigationAnalytics(run,state);
   return `${renderComposition(run, state)}<section class="studio-sheet subgroup-sheet"><div class="sheet-heading"><div><span class="studio-eyebrow">CLINICAL COMPOSITION</span><h3>Clinical context behind the counts.</h3></div></div><div class="subgroup-table"><div class="subgroup-labels"><span>Recorded subgroup</span><span>Screened / proposed matching</span></div>${run.subgroups.filter(group => group.screened).map(group => `<button data-subgroup="${e(group.id)}" class="${state.filters.subgroup === group.id ? 'selected' : ''}" aria-pressed="${state.filters.subgroup === group.id}"><span>${e(group.label)}</span><strong>${group.screened} <span>/</span> ${group.proposed}</strong>${icon('chevron')}</button>`).join('')}</div><p class="sheet-note">Clinical subgroups overlap. Do not add their counts as if they were distinct people.</p></section>${renderMissingness(run)}<section class="studio-sheet missing-demographics"><span class="studio-eyebrow">LIMITS OF INTERPRETATION</span><h3>Composition, not representativeness.</h3><p>${run.dataset.id === 'casebook' ? 'The reference case has no supplied sex, gender, race, ethnicity or site metadata.' : 'Demographic distributions and fictional sites are authored showcase assumptions, not estimates of the disease population.'} No compatible reference population, geographic reach, actual enrollment or recruitment data is supplied. No diversity score, coverage map or market-reach claim is calculated.</p></section>`;
 }
@@ -71,6 +77,7 @@ const traceSteps = [['source', '01', 'Source', 'Registry and passage'], ['criter
 const predicateFields = rule => rule?.field ? [rule.field] : (rule?.conditions || []).flatMap(predicateFields);
 
 export function renderDecision(workspace, traceStep = 'source', traceCriterion = 'RENAL') {
+  if(workspace.run.unified)return renderUnifiedDecision(workspace);
   return `${renderGuidanceReview(workspace)}<details class="decision-trace"><summary>Inspect the source-to-decision trace and actual actions</summary>${renderDecisionTrace(workspace, traceStep, traceCriterion)}</details>`;
 }
 
@@ -108,12 +115,14 @@ function renderEvents(events, selectableIds = null, report = false) {
 }
 
 export function buildReviewPacket(workspace) {
+  if(workspace.run.unified){const {run,state}=workspace;return {schemaVersion:'2.0.0',syntheticOnly:true,exportedAt:new Date().toISOString(),analysis:exportUnifiedAnalysis(run),context:{...state},filteredPatientIds:visibleRecords(run,state.filters).map(p=>p.id),evidence:run.evidenceRegistry,decisionBrief:run.explanations[state.selectedPatientId]||null,guidanceReview:{rows:getGuidanceRows(run,state,state.selectedPatientId),summary:summarizeGuidance(getGuidanceRows(run,state,state.selectedPatientId))},scoring:{...reviewConfig,scope:'Partial core factors only; no HIV, brain, pregnancy or participation-risk model'},events:workspace.events,limitations:['All new policies, patients and assessments are authored fiction; no empirical drug evidence is established.','Overall matching requires medical and participation checks; actual enrollment remains a separate authorized clinical decision.','The attention index is unvalidated and partial; it cannot override an exclusion or missing information.','Local reviews are unauthenticated and not durable or tamper-proof.']};}
   const { run, state } = workspace;
   const shown = visibleRecords(run, state.filters);
   return { title: 'Cohort synthetic demonstration review packet', syntheticOnly: true, exportedAt: new Date().toISOString(), analysis: run, context: { ...state }, filteredPatientIds: shown.map(r => r.id), evidence: run.evidenceRegistry, decisionBrief: run.explanations[state.selectedPatientId] || null, guidanceReview: { rows: getGuidanceRows(run,state,state.selectedPatientId), summary: summarizeGuidance(getGuidanceRows(run,state,state.selectedPatientId)) }, scoring: run.casePack ? {status:'not-configured',note:'Not configured for this case'} : reviewConfig, events: [...workspace.events], limitations: run.casePack ? ['Authored fictional patients, protocol snapshots and assessments; no clinical validation.', 'Original research note unavailable; case-specification summaries are secondary and not independently verified.', 'Investigation routes and participation readiness do not override current eligibility.', 'Missing proposed criteria require configuration; no default clinical thresholds.', 'Local session review events are not authenticated clinical approvals.'] : ['Fictional drug and patient records; no clinical validation.', 'The reference case uses a renal-stability adapter assumption; generated flags are synthetic; longitudinal evidence is not supplied.', 'The index is unvalidated reviewer attention, not probability of harm or enrollment approval.', 'Local session events are not a tamper-proof production audit trail.'] };
 }
 
 export function renderReport(workspace) {
+  if(workspace.run.unified)return renderUnifiedReport(workspace);
   const brief = workspace.run.explanations[workspace.state.selectedPatientId];
   return renderReportBody(workspace).replace('</article>', `<section><h2>Patient-specific Decision Brief</h2>${renderDecisionBrief(brief,true)}</section><section><h2>Filtered review scope</h2><p>${visibleRecords(workspace.run,workspace.state.filters).length} of ${workspace.run.current.total} records shown. Patient IDs: ${visibleRecords(workspace.run,workspace.state.filters).map(record=>e(record.id)).join(', ') || 'None'}. Whole-cohort tables remain explicit.</p></section>${renderGuidanceReview(workspace,true)}${renderReportSources(workspace.run)}</article>`);
 }

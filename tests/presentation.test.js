@@ -22,7 +22,7 @@ function harness(overrides={},definitions=scenes()){
 test('the default story has twelve unique scenes and 300 seconds of editable speaking time',()=>{
   assert.equal(defaultPresentation.scenes.length,12);assert.equal(presentationDuration(defaultPresentation.scenes),300000);
   assert.equal(new Set(defaultPresentation.scenes.map(scene=>scene.id)).size,12);
-  for(const scene of defaultPresentation.scenes){assert.ok(scene.holdMs>0&&scene.target&&scene.caption&&scene.context.dataset==='casebook');for(const beat of scene.beats||[])assert.ok(beat.at>=0&&beat.at<1);}
+  for(const scene of defaultPresentation.scenes){assert.ok(scene.holdMs>0&&scene.target&&scene.caption&&scene.context.dataset==='unified');for(const beat of scene.beats||[])assert.ok(beat.at>=0&&beat.at<1);}
   assert.deepEqual(defaultPresentation.scenes.map(scene=>scene.id),['study','patient','evidence','scenario','priority','restriction','unresolved','population','composition','guidance','trace','report']);
 });
 

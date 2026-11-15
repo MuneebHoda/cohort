@@ -19,7 +19,7 @@ export function getGuidanceRows(run, state, patientId) {
       gap = run.casePack?.id === 'PREG' ? 'Pregnancy remains a separate research question; this general source cannot define inclusion conditions.' : 'Determine whether the actual restriction is scientifically justified. A diagnosis label or source link alone does not decide this.';
     } else if (topic.id === 'drug') {
       const drug = [...brief.evidence.supporting, ...brief.evidence.retaining, ...brief.evidence.unresolved].filter(item => item.kind === 'Fictional drug evidence');
-      const drugFields = new Set(brief.criteria.filter(item=>item.sourceIds.length).flatMap(item=>item.fields));
+      const drugFields = new Set(brief.criteria.filter(item=>item.sourceIds.length&&(!run.unified||item.scope==='medical')).flatMap(item=>item.fields));
       factFields = fields.filter(field=>drugFields.has(field) || /medication|antiretroviral|interaction|drug_specific|drug_elimination|other_cancer_treatment/.test(field));
       documentation = drug.length ? [...new Set(drug.map(item => item.sourceId))].map(id => `${id}: fictional study evidence, applicability unreviewed.`) : [];
       documentationStatus = drug.length ? 'Partially documented' : 'Documentation missing';
@@ -43,7 +43,7 @@ export function getGuidanceRows(run, state, patientId) {
       gap = 'No compatible reference population or observed enrollment data is supplied. Composition does not establish representativeness.';
     }
     const saved = state.guidanceReviews?.[guidanceReviewKey(run, patientId, topic.id)] || null;
-    const relevantCriteria = brief.criteria.filter(item => topic.id === 'rationale' ? item.result !== 'PASS' : topic.id === 'broad' ? item.criterionId.endsWith('_POLICY') : topic.id === 'drug' ? item.sourceIds.length : topic.id === 'organ' ? item.fields.some(field=>factFields.includes(field)) : false);
+    const relevantCriteria = brief.criteria.filter(item => topic.id === 'rationale' ? item.result !== 'PASS' : topic.id === 'broad' ? (item.criterionId.endsWith('_POLICY') || run.unified && ['HIV','BRAIN','OLDER','PRIOR'].includes(item.domain)) : topic.id === 'drug' ? item.sourceIds.length&&(!run.unified||item.scope==='medical') : topic.id === 'organ' ? item.fields.some(field=>factFields.includes(field)) : topic.id==='accommodation' && run.unified ? item.scope==='participation' : false);
     const criterionRefs = [...(topic.id==='rationale'?brief.originalCriteria.filter(item=>item.result!=='PASS').map(item=>({criterionId:item.criterionId,phase:'original'})):[]),...relevantCriteria.map(item=>({criterionId:item.criterionId,phase:'active'}))];
     const sourceVerified = source?.verified === true && Boolean(passage);
     return { ...topic, patientId, runId: run.id, passage, sourceVerified, sourceMetadata: source || null, factFields, protocolId: brief.protocol.id, criterionRefs, criterionIds: [...new Set(criterionRefs.map(ref=>ref.criterionId))],
