@@ -915,3 +915,24 @@ body.studio-body {
 @media(max-width:900px){.patient-studio-layout{display:block}.population-stage-column{display:block;padding:0;overflow:visible}.patient-detail-region{display:none}.mobile-detail-open .patient-detail-region{display:block}.mobile-detail-open .population-stage-column{display:none}.studio-header-actions .patients-toggle{display:inline-flex}.patients-toggle>span{display:none}#patient-queue-dialog .sp-queue-scroll{overflow:auto}#patient-queue-dialog .patient-queue-region{display:block}#patient-queue-dialog .sp-queue{height:100%}}
 @media(max-width:600px){#patient-queue-dialog{width:100vw;border-radius:0}.queue-drawer-header{padding:15px 16px 12px}.queue-drawer-header h2{font-size:23px}.patients-toggle{padding:7px 9px}.patients-toggle .icon{width:16px}.studio-header-actions{gap:5px}}
 @media print{#patient-queue-dialog{display:none!important}}
+/* Exclusion investigation extends the existing reading surfaces and semantic colors. */
+.case-scenario-note{font-size:12px;color:var(--text-secondary)}
+.case-context-summary{position:relative;flex-shrink:0}.case-context-summary>summary{cursor:pointer;min-height:36px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--accent-hover)}
+.case-context-summary[open]{position:absolute;right:24px;top:170px;z-index:25;width:min(480px,calc(100vw - 32px));padding:18px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface);box-shadow:var(--shadow-soft)}
+.case-context-summary p{font-size:12px;line-height:1.7;margin:10px 0;color:var(--text-secondary)}
+.case-investigation,.case-readiness{margin:18px 0;padding:16px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface-subtle)}
+.case-investigation h4,.case-readiness h4{font-size:17px;margin:6px 0 12px;color:var(--text-primary)}
+.case-investigation p,.case-investigation li,.case-readiness p,.case-readiness li{font-size:12px;line-height:1.7;color:var(--text-secondary)}
+.case-investigation ul,.case-readiness ul{padding-left:18px;margin:10px 0}.case-investigation li+li{margin-top:12px}.case-investigation li>span{display:block}.case-investigation li strong{color:var(--text-primary);font-weight:550}
+.case-route-label{font-size:12px;line-height:1.5;color:var(--text-primary);font-weight:500}
+.sp-demographic-facts dd>small{display:block;margin-top:4px;font-size:10px;color:var(--text-secondary)}
+.case-count-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px}.case-count-grid>div{display:flex;flex-direction:column;gap:12px}.case-count-grid span{font-size:12px;color:var(--text-secondary)}.case-count-grid strong{font-size:32px;font-weight:500;color:var(--text-primary);font-variant-numeric:tabular-nums}.case-summary>p{margin-top:20px;font-size:12px}.case-event-list{padding-left:20px}.case-event-list li{padding:10px 0}.case-event-list small{color:var(--text-secondary)}
+@media(max-width:900px){.case-count-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.case-scenario-note{display:none}.case-context-summary[open]{top:210px;right:16px}.case-route-label{font-size:11px}}
+@media(max-width:600px){.case-count-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.case-context-summary[open]{top:280px}.case-investigation,.case-readiness{padding:14px}.case-investigation p,.case-investigation li,.case-readiness p,.case-readiness li{font-size:13px}}
+.sp-outcomes.case-outcomes{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.sp-outcomes.case-outcomes>div{min-width:0}.sp-outcomes.case-outcomes .case-route-label{display:block;overflow-wrap:normal}
+.case-anchor-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.case-anchor-links button{min-height:44px}
+.case-route-filter{display:flex;flex-direction:column;gap:7px;padding:12px 18px;font-size:12px;color:var(--text-secondary);border-bottom:1px solid var(--border);flex-shrink:0}.case-route-filter select{min-height:44px;width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text-primary);font-size:12px}
+.sp-outcomes.case-outcomes>.case-outcome-excluded{background:var(--status-excluded-subtle)}.sp-outcomes.case-outcomes>.case-outcome-indeterminate{background:var(--status-indeterminate-subtle)}.sp-outcomes.case-outcomes>.case-outcome-eligible{background:var(--status-existing-subtle)}
+.case-proposed-status{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 18px;border-top:1px solid var(--border);font-size:12px}.case-proposed-status>span:first-child,.case-proposed-status>small{width:100%;font-size:11px;color:var(--text-secondary)}
+.case-source-content code{overflow-wrap:anywhere;word-break:break-all}

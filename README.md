@@ -15,7 +15,7 @@ npm test
 npm run build
 ```
 
-`dist/` is the static build, including local Three.js/Motion bundles and their MIT licenses. Serve it at a site's root. To use a different local port: `PORT=5174 npm run dev`. State and events are held in this browser tab: perspective changes preserve the run, selection, filters and working dataset. Reload clears the session. Reset restores the selected dataset's immutable baseline (500 or 20), removes its working additions, and retains the current perspective, other dataset working copy and actual session history.
+`dist/` is the static build, including local Three.js/Motion bundles and their MIT licenses. Serve it at a site's root. To use a different local port: `PORT=5174 npm run dev`. State and events are held in this browser tab: perspective changes preserve the run, selection, filters and working dataset. Reload clears the session. Reset restores the selected dataset's immutable baseline (500, 20, or the selected 50-record case pack), removes its working additions, and retains the current perspective, other dataset working copy and actual session history.
 
 ## Three-minute demonstration
 
@@ -70,6 +70,18 @@ Focused inspection retains the ring and draws at most six patient spheres in one
 
 Dataset changes and Reset return the scene to overview. Scenario changes preserve the focused group, explain an out-of-group selection and provide Locate. Reset view changes presentation only. Rendering settles when idle and pauses when hidden. The equivalent SVG 2D view and automatic WebGL fallback preserve group navigation, complete paging and keyboard controls. Sphere size and placement carry no clinical risk meaning. Geometry buffers are reused during animation, with no remote models or assets.
 
+## Exclusion Investigation case packs
+
+Use the existing **Dataset** selector for HIV, BRAIN, OLDER, ACCESS, COGNITIVE, PRIOR, PREG or RENAL. Each pack adds 50 distinct synthetic people: six hand-authored anchors and 44 seeded variants. The original 20-record reference and expanded 500-record datasets remain separate. No combined trial-coverage claim is made across these contexts.
+
+The patient panel separates the original recorded medical/participation screen from current-protocol evaluation, investigation findings, evidence applicability, participation readiness and actual user-recorded review actions. Open **Case context & source** for a compact explanation and anchor shortcuts. The patient drawer has an **Investigation route** selector; its filters synchronize with the scene and Trial Strategy. Route counts may overlap and count unique people. Known medical failure still takes precedence over unknown information, with every reason preserved.
+
+HIV, brain-metastasis, older-adult and prior-cancer cases contrast retained blanket protocol restrictions with separately authored assessment-permitting snapshots. ACCESS and COGNITIVE keep support availability, procedure/method review and consent-process review outside the medical eligibility partition. PREG uses an evidence-gap / separate-research route, with no automatic inclusion scenario. Proposed medical criteria remain **Requires configuration** for seven packs. RENAL can compare the existing fictional SYN-217 configuration in that matching study only, with separate metric, unit and measurement-currency checks. No laboratory-expiry window or new cutoff is inferred.
+
+All eight case packs show **Not configured for this case** for attention scoring. The existing SYN-217 scoring stays confined to the original datasets. The supplied research-note text was not provided; the source drawer quotes the actual supplied case specification, registers the original note as unavailable, and marks bibliography/primary verification unresolved. Fictional observations, hypothetical protocol settings and authored clinical assessments are labelled separately.
+
+See [the complete handoff](docs/exclusion-investigation/HANDOFF.md) for changed files, case demonstrations, outcome counts, clinical inputs for Ehsan, source questions for Imtenan, and actual verification. [OUTCOMES.json](docs/exclusion-investigation/OUTCOMES.json) contains generated counts and overlapping route totals for seed 2171, as-of 2026-11-01. They are demonstration design, not prevalence.
+
 ## Architecture and main functions
 
 - `src/clinical-fixture.js`: `clinicalConfig` and the reduced supplied `demoCase`; all executable thresholds, units, criterion definitions, rule versions, evidence references, and scenario approval states.
@@ -80,6 +92,9 @@ Dataset changes and Reset return the scene to overview. Scenario changes preserv
 - `src/ranking.js`: `scoreReviewAttention`, `getReviewProfile`, and `rankCandidates`, a pure review layer after eligibility.
 - `src/review-fixture.js`: editable index formula, coefficients, six profile dimensions, disclaimers, and expert-review task copy transcribed from the supplied fictional case.
 - `src/patient-review.js` / `src/patient-review.css`: ranked table, status groups, selected-patient profile, evidence pathway, and review tasks.
+- `src/case-pack-metadata.js` / `src/case-packs.js`: supplied case metadata, separately authored fictional anchors, deterministic variants and source-availability registry.
+- `src/investigation.js`: case-scoped adapters into the unchanged eligibility engine, investigation routes and separate readiness.
+- `src/investigation-views.js`: additive patient, evidence, strategy, decision and report content.
 - `src/workspace.js`: immutable runs, shared study/dataset/scenario identity, age/demographic/subgroup metrics, AND filters, pagination, scratch validation, working versions and run-scoped actual review annotations.
 - `src/inspection.js` / `src/composition.js`: exact composition counts, category-linked inspection, clinical missingness, provenance and reusable review controls.
 - `src/synthetic-config.js` / `src/synthetic-cohort.js`: editable versioned assumptions and deterministic independent generation.
@@ -155,7 +170,9 @@ The supplied raw JSON has no longitudinal renal-stability field. The pre-existin
 
 ## Verification and limits
 
-`npm test`: **120 passed, 0 failed**, retaining the reference engine/ranking regressions and 1,260 exhaustive condition combinations. Coverage includes determinism, types/categories/units/dates, coherent cardiac states, missingness, independent demographic streams, unique IDs, all 500 group/table identities, complete candidate ranking, exhaustive focused-page coverage, responsive patient location, filter/chart/report reconciliation, actual review actions, boundary-tool filters, scratch isolation, dataset-specific Reset, separate challenge cases and contrast. `npm run check` syntax-checks every source module; `npm run build` creates the static bundle. No separate lint task is configured.
+The additive Exclusion Investigation milestone passed 23 focused case tests plus all 120 existing tests, 77 development-browser workflow checks, and 12 separately served static-build browser checks. The browser checks exercised all eight packs, including source inspection, linked filters, mobile navigation, actual demo annotations, HIV/ACCESS/PREG JSON downloads and preservation of the original reference ranking. Original research-note text and primary bibliography remain unavailable/unverified; no clinical acceptance or approval is established. See the case handoff for the detailed scope.
+
+`npm test`: **143 passed, 0 failed**, retaining the reference engine/ranking regressions and 1,260 exhaustive condition combinations. Coverage includes determinism, types/categories/units/dates, coherent cardiac states, missingness, independent demographic streams, unique IDs, all 500 group/table identities, complete candidate ranking, exhaustive focused-page coverage, responsive patient location, filter/chart/report reconciliation, actual review actions, boundary-tool filters, scratch isolation, dataset-specific Reset, separate challenge cases and contrast. `npm run check` syntax-checks every source module; `npm run build` creates the static bundle. No separate lint task is configured.
 
 Chrome 157 ring verification passed **47 browser workflow checks** across the development server and an independently served static build at 1440×900 desktop, 1280×800 laptop and 375×812 mobile. Checks covered all 80 new-match sphere pages, exact reference ranking, queue search/focus/keyboard commit behavior, page/scroll preservation, linked filtering, scenario reversal, 20/500 switching, Reset, Trial/Decision perspective continuity, mobile return paths and detail stepping, empty states, canvas picking, interrupted Motion, reduced motion, idle/hidden rendering, SVG 2D switching, automatic no-WebGL fallback and a missing Motion bundle. No runtime errors occurred in either final normal-runtime flow. Intentional WebGL/Motion blocking was tested separately. Existing clinical, report and scratch-profile regressions remain covered by the test suite. Screenshots and QA scripts are under ignored `output/playwright/`. This is not a full accessibility certification or cross-browser/device benchmark.
 

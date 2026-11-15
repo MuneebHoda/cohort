@@ -1,0 +1,313 @@
+{
+  "generation": {
+    "id": "COHORT-INVESTIGATION",
+    "version": "1.0.0",
+    "seed": 2171,
+    "asOfDate": "2026-11-01",
+    "variantsPerPack": 44,
+    "unassessedInteractionProbability": 0.14,
+    "independentRestrictionProbability": 0.08
+  },
+  "limits": "Authored synthetic demonstration counts; not prevalence or a combined trial-coverage estimate. Review findings overlap. Current protocol counts describe authored protocol snapshots.",
+  "outcomes": [
+    {
+      "case": "HIV",
+      "datasetId": "case-hiv",
+      "studyId": "ILLUSTRATIVE-HIV",
+      "records": 50,
+      "uniquePeople": 50,
+      "anchors": 6,
+      "variants": 44,
+      "currentProtocol": {
+        "meets": 14,
+        "excluded": 36,
+        "indeterminate": 0
+      },
+      "proposed": {
+        "status": "REQUIRES_CONFIGURATION"
+      },
+      "recordedRejections": 43,
+      "screeningDiscrepancies": 11,
+      "primaryRoutes": {
+        "SCREENING_CORRECTION_REVIEW": 9,
+        "PROTOCOL_REVISION_REVIEW": 5,
+        "ACCOMMODATION_REVIEW": 0,
+        "NEEDS_INFORMATION": 9,
+        "RETAIN_RESTRICTION": 22,
+        "SEPARATE_RESEARCH_PATHWAY": 0,
+        "NO_CASE_SPECIFIC_ACTION": 5
+      },
+      "overlappingFindings": {
+        "SCREENING_CORRECTION_REVIEW": 11,
+        "PROTOCOL_REVISION_REVIEW": 12,
+        "ACCOMMODATION_REVIEW": 0,
+        "NEEDS_INFORMATION": 10,
+        "RETAIN_RESTRICTION": 22,
+        "SEPARATE_RESEARCH_PATHWAY": 0,
+        "NO_CASE_SPECIFIC_ACTION": 5
+      }
+    },
+    {
+      "case": "BRAIN",
+      "datasetId": "case-brain",
+      "studyId": "ILLUSTRATIVE-BRAIN",
+      "records": 50,
+      "uniquePeople": 50,
+      "anchors": 6,
+      "variants": 44,
+      "currentProtocol": {
+        "meets": 17,
+        "excluded": 33,
+        "indeterminate": 0
+      },
+      "proposed": {
+        "status": "REQUIRES_CONFIGURATION"
+      },
+      "recordedRejections": 43,
+      "screeningDiscrepancies": 10,
+      "primaryRoutes": {
+        "SCREENING_CORRECTION_REVIEW": 10,
+        "PROTOCOL_REVISION_REVIEW": 5,
+        "ACCOMMODATION_REVIEW": 0,
+        "NEEDS_INFORMATION": 12,
+        "RETAIN_RESTRICTION": 16,
+        "SEPARATE_RESEARCH_PATHWAY": 0,
+        "NO_CASE_SPECIFIC_ACTION": 7
+      },
+      "overlappingFindings": {
+        "SCREENING_CORRECTION_REVIEW": 10,
+        "PROTOCOL_REVISION_REVIEW": 17,
+        "ACCOMMODATION_REVIEW": 0,
+        "NEEDS_INFORMATION": 12,
+        "RETAIN_RESTRICTION": 16,
+        "SEPARATE_RESEARCH_PATHWAY": 0,
+        "NO_CASE_SPECIFIC_ACTION": 7
+      }
+    },
+    {
+      "case": "OLDER",
+      "datasetId": "case-older",
+      "studyId": "ILLUSTRATIVE-OLDER",
+      "records": 50,
+      "uniquePeople": 50,
+      "anchors": 6,
+      "variants": 44,
+      "currentProtocol": {
+        "meets": 16,
+        "excluded": 34,
+        "indeterminate": 0
+      },
+      "proposed": {
+        "status": "REQUIRES_CONFIGURATION"
+      },
+      "recordedRejections": 39,
+      "screeningDiscrepancies": 9,
+      "primaryRoutes": {
+        "SCREENING_CORRECTION_REVIEW": 7,
+        "PROTOCOL_REVISION_REVIEW": 7,
+        "ACCOMMODATION_REVIEW": 0,
+        "NEEDS_INFORMATION": 7,
+        "RETAIN_RESTRICTION": 20,
+        "SEPARATE_RESEARCH_PATHWAY": 0,
+        "NO_CASE_SPECIFIC_ACTION": 9
+      },
+      "overlappingFindings": {
+        "SCREENING_CORRECTION_REVIEW": 9,
+        "PROTOCOL_REVISION_REVIEW": 17,
+        "ACCOMMODATION_REVIEW": 0,
+        "NEEDS_INFORMATION": 9,
+        "RETAIN_RESTRICTION": 20,
+        "SEPARATE_RESEARCH_PATHWAY": 0,
+        "NO_CASE_SPECIFIC_ACTION": 9
+      }
+    },
+    {
+      "case": "ACCESS",
+      "datasetId": "case-access",
+      "studyId": "ILLUSTRATIVE-ACCESS",
+      "records": 50,
+      "uniquePeople": 50,
+      "anchors": 6,
+      "variants": 44,
+      "currentProtocol": {
+        "meets": 39,
+        "excluded": 11,
+        "indeterminate": 0
+      },
+      "proposed": {
+        "status": "REQUIRES_CONFIGURATION"
+      },
+      "recordedRejections": 44,
+      "screeningDiscrepancies": 0,
+      "primaryRoutes": {
+        "SCREENING_CORRECTION_REVIEW": 0,
+        "PROTOCOL_REVISION_REVIEW": 0,
+        "ACCOMMODATION_REVIEW": 18,
+        "NEEDS_INFORMATION": 15,
+        "RETAIN_RESTRICTION": 11,
+        "SEPARATE_RESEARCH_PATHWAY": 0,
+        "NO_CASE_SPECIFIC_ACTION": 6
+      },
+      "overlappingFindings": {
+        "SCREENING_CORRECTION_REVIEW": 0,
+        "PROTOCOL_REVISION_REVIEW": 0,
+        "ACCOMMODATION_REVIEW": 44,
+        "NEEDS_INFORMATION": 28,
+        "RETAIN_RESTRICTION": 11,
+        "SEPARATE_RESEARCH_PATHWAY": 0,
+        "NO_CASE_SPECIFIC_ACTION": 6
+      }
+    },
+    {
+      "case": "COGNITIVE",
+      "datasetId": "case-cognitive",
+      "studyId": "ILLUSTRATIVE-COGNITIVE",
+      "records": 50,
+      "uniquePeople": 50,
+      "anchors": 6,
+      "variants": 44,
+      "currentProtocol": {
+        "meets": 40,
+        "excluded": 10,
+        "indeterminate": 0
+      },
+      "proposed": {
+        "status": "REQUIRES_CONFIGURATION"
+      },
+      "recordedRejections": 38,
+      "screeningDiscrepancies": 0,
+      "primaryRoutes": {
+        "SCREENING_CORRECTION_REVIEW": 0,
+        "PROTOCOL_REVISION_REVIEW": 0,
+        "ACCOMMODATION_REVIEW": 24,
+        "NEEDS_INFORMATION": 4,
+        "RETAIN_RESTRICTION": 10,
+        "SEPARATE_RESEARCH_PATHWAY": 0,
+        "NO_CASE_SPECIFIC_ACTION": 12
+      },
+      "overlappingFindings": {
+        "SCREENING_CORRECTION_REVIEW": 0,
+        "PROTOCOL_REVISION_REVIEW": 0,
+        "ACCOMMODATION_REVIEW": 38,
+        "NEEDS_INFORMATION": 20,
+        "RETAIN_RESTRICTION": 10,
+        "SEPARATE_RESEARCH_PATHWAY": 0,
+        "NO_CASE_SPECIFIC_ACTION": 12
+      }
+    },
+    {
+      "case": "PRIOR",
+      "datasetId": "case-prior",
+      "studyId": "ILLUSTRATIVE-PRIOR",
+      "records": 50,
+      "uniquePeople": 50,
+      "anchors": 6,
+      "variants": 44,
+      "currentProtocol": {
+        "meets": 15,
+        "excluded": 35,
+        "indeterminate": 0
+      },
+      "proposed": {
+        "status": "REQUIRES_CONFIGURATION"
+      },
+      "recordedRejections": 38,
+      "screeningDiscrepancies": 3,
+      "primaryRoutes": {
+        "SCREENING_CORRECTION_REVIEW": 3,
+        "PROTOCOL_REVISION_REVIEW": 7,
+        "ACCOMMODATION_REVIEW": 0,
+        "NEEDS_INFORMATION": 9,
+        "RETAIN_RESTRICTION": 19,
+        "SEPARATE_RESEARCH_PATHWAY": 0,
+        "NO_CASE_SPECIFIC_ACTION": 12
+      },
+      "overlappingFindings": {
+        "SCREENING_CORRECTION_REVIEW": 3,
+        "PROTOCOL_REVISION_REVIEW": 14,
+        "ACCOMMODATION_REVIEW": 0,
+        "NEEDS_INFORMATION": 10,
+        "RETAIN_RESTRICTION": 19,
+        "SEPARATE_RESEARCH_PATHWAY": 0,
+        "NO_CASE_SPECIFIC_ACTION": 12
+      }
+    },
+    {
+      "case": "PREG",
+      "datasetId": "case-preg",
+      "studyId": "ILLUSTRATIVE-PREG",
+      "records": 50,
+      "uniquePeople": 50,
+      "anchors": 6,
+      "variants": 44,
+      "currentProtocol": {
+        "meets": 8,
+        "excluded": 37,
+        "indeterminate": 5
+      },
+      "proposed": {
+        "status": "REQUIRES_CONFIGURATION"
+      },
+      "recordedRejections": 37,
+      "screeningDiscrepancies": 0,
+      "primaryRoutes": {
+        "SCREENING_CORRECTION_REVIEW": 0,
+        "PROTOCOL_REVISION_REVIEW": 0,
+        "ACCOMMODATION_REVIEW": 0,
+        "NEEDS_INFORMATION": 5,
+        "RETAIN_RESTRICTION": 11,
+        "SEPARATE_RESEARCH_PATHWAY": 26,
+        "NO_CASE_SPECIFIC_ACTION": 8
+      },
+      "overlappingFindings": {
+        "SCREENING_CORRECTION_REVIEW": 0,
+        "PROTOCOL_REVISION_REVIEW": 0,
+        "ACCOMMODATION_REVIEW": 0,
+        "NEEDS_INFORMATION": 42,
+        "RETAIN_RESTRICTION": 11,
+        "SEPARATE_RESEARCH_PATHWAY": 37,
+        "NO_CASE_SPECIFIC_ACTION": 8
+      }
+    },
+    {
+      "case": "RENAL",
+      "datasetId": "case-renal",
+      "studyId": "DEMO-SYN217-03",
+      "records": 50,
+      "uniquePeople": 50,
+      "anchors": 6,
+      "variants": 44,
+      "currentProtocol": {
+        "meets": 9,
+        "excluded": 23,
+        "indeterminate": 18
+      },
+      "proposed": {
+        "meets": 14,
+        "excluded": 18,
+        "indeterminate": 18,
+        "newlyMatching": 5
+      },
+      "recordedRejections": 40,
+      "screeningDiscrepancies": 12,
+      "primaryRoutes": {
+        "SCREENING_CORRECTION_REVIEW": 10,
+        "PROTOCOL_REVISION_REVIEW": 5,
+        "ACCOMMODATION_REVIEW": 0,
+        "NEEDS_INFORMATION": 8,
+        "RETAIN_RESTRICTION": 18,
+        "SEPARATE_RESEARCH_PATHWAY": 0,
+        "NO_CASE_SPECIFIC_ACTION": 9
+      },
+      "overlappingFindings": {
+        "SCREENING_CORRECTION_REVIEW": 12,
+        "PROTOCOL_REVISION_REVIEW": 13,
+        "ACCOMMODATION_REVIEW": 0,
+        "NEEDS_INFORMATION": 19,
+        "RETAIN_RESTRICTION": 18,
+        "SEPARATE_RESEARCH_PATHWAY": 0,
+        "NO_CASE_SPECIFIC_ACTION": 9
+      }
+    }
+  ]
+}

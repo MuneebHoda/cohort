@@ -1,0 +1,644 @@
+{
+  "spec_version": "1.0",
+  "kind": "implementation_specification_not_generated_patient_data_or_clinical_rules",
+  "source": {
+    "filename": "SOURCE_RESEARCH_NOTE.txt",
+    "original_filename": "Pasted text.txt",
+    "sha256": "9ca0f0a2a5b0056cf235c6a99f0114f794934867381d7bf9f3810dd97bd0cc8e",
+    "line_count": 499,
+    "status": "user_provided_secondary_summary",
+    "unresolved_bibliography": true
+  },
+  "purpose": "Add source-grounded exclusion investigation to the existing application without rebuilding it.",
+  "source_taxonomy": [
+    "Incorrect interpretation",
+    "Lack of individualized assessment",
+    "Inadequate accommodations",
+    "Overly restrictive medical thresholds"
+  ],
+  "source_taxonomy_lines": [
+    379,
+    405
+  ],
+  "design_choices": {
+    "data_generation": "8 packs x 50 records = 400 new demo records; 6 hand-authored anchors + 44 seeded variants per pack",
+    "seed": "configurable fixed value; record it in generated metadata",
+    "clinical_cutoffs": "not supplied by this note; no invented defaults",
+    "source_claims": "note supports reconsideration questions, not individual patient adjudications",
+    "unconfigured_rule_state": "REQUIRES_CONFIGURATION, never implicitly PASS",
+    "eligibility_layers": [
+      "original_screening_record",
+      "current_protocol_evaluation",
+      "proposed_scenario_evaluation_if_configured",
+      "review_dispositions",
+      "participation_readiness",
+      "evidence_applicability"
+    ],
+    "ranking": "separate queue by review route; preserve existing SYN-217 scoring only within its defined scope",
+    "screening_vs_amendment": "recorded screening decision must remain distinct from computed protocol evaluation",
+    "cohort_aggregation": "per active trial/dataset only; review-reason tags may overlap; count unique patient IDs",
+    "reference_regression": "preserve all existing fixtures, counts, theme, and workflows"
+  },
+  "cases": [
+    {
+      "id": "HIV",
+      "title": "Controlled HIV in cancer trials",
+      "source_lines": [
+        25,
+        60
+      ],
+      "source_category": [
+        "Incorrect interpretation",
+        "Lack of individualized assessment"
+      ],
+      "original_concern": "Adverse reactions, treatment interactions, and interpretation of cancer outcomes.",
+      "reconsideration_basis": "The note describes considering controlled HIV rather than an automatic diagnosis-based exclusion, while checking other trial requirements.",
+      "fields": [
+        "hiv_status",
+        "viral_load_status",
+        "viral_load_collection_date",
+        "cd4_value",
+        "cd4_unit",
+        "cd4_protocol_assessment",
+        "current_antiretroviral_medications",
+        "interaction_assessment",
+        "other_criteria_results"
+      ],
+      "missing_configuration": [
+        "CD4 acceptance threshold",
+        "definition of viral suppression",
+        "required stability duration",
+        "drug-specific interaction evidence"
+      ],
+      "review_questions": [
+        "Is viral suppression documented?",
+        "Does the supplied CD4 assessment satisfy an explicitly configured protocol requirement?",
+        "Was an actual medication interaction assessment completed?",
+        "Does the current protocol permit this subgroup, or would the protocol need revision?"
+      ],
+      "anchors": [
+        {
+          "id": "HIV-A",
+          "vignette": "Controlled infection, documented protocol-specific CD4 assessment, interaction review completed with no concern identified",
+          "expected_primary_review_route": "PROTOCOL_REVISION_REVIEW",
+          "required_guardrail": "Do not change current blanket exclusion merely because review is supported."
+        },
+        {
+          "id": "HIV-B",
+          "vignette": "Relevant interaction documented in the hypothetical trial configuration",
+          "expected_primary_review_route": "RETAIN_RESTRICTION",
+          "required_guardrail": "Reconsidering diagnosis-based exclusion must not bypass a relevant interaction."
+        },
+        {
+          "id": "HIV-C",
+          "vignette": "Viral load or required CD4 evidence missing",
+          "expected_primary_review_route": "NEEDS_INFORMATION",
+          "required_guardrail": "Unknown is not evidence of control or an acceptable CD4 assessment."
+        },
+        {
+          "id": "HIV-D",
+          "vignette": "No HIV; all configured criteria satisfied",
+          "expected_primary_review_route": "NO_CASE_SPECIFIC_ACTION",
+          "required_guardrail": "Unaffected comparator; no special HIV requirement should be imposed."
+        },
+        {
+          "id": "HIV-E",
+          "vignette": "Controlled HIV but another unchanged exclusion fails",
+          "expected_primary_review_route": "RETAIN_RESTRICTION",
+          "required_guardrail": "Keep every failed criterion visible."
+        },
+        {
+          "id": "HIV-F",
+          "vignette": "Diagnosis-based recorded rejection even though the separately authored current protocol already permits this controlled subgroup",
+          "expected_primary_review_route": "SCREENING_CORRECTION_REVIEW",
+          "required_guardrail": "This is a screening discrepancy, not a protocol amendment."
+        }
+      ],
+      "presentation_line": "The question is not simply whether the patient has HIV. It is whether their current infection status, immune assessment, and medication review justify excluding them from this particular trial.",
+      "source_status": "provided_secondary_research_note_not_independently_verified",
+      "case_context": "separate_hypothetical_protocol_snapshot; not a universal extension of SYN-217"
+    },
+    {
+      "id": "BRAIN",
+      "title": "Treated or clinically stable brain metastases",
+      "source_lines": [
+        72,
+        109
+      ],
+      "source_category": [
+        "Lack of individualized assessment"
+      ],
+      "original_concern": "Neurological assessment, complications, and distinguishing treatment effects from disease progression.",
+      "reconsideration_basis": "The note distinguishes treated or clinically stable metastases from a diagnosis-only exclusion.",
+      "fields": [
+        "brain_metastases_present",
+        "prior_treatment_status",
+        "current_stability_assessment",
+        "neurological_symptoms",
+        "assessment_date",
+        "drug_specific_neurological_concern",
+        "other_criteria_results"
+      ],
+      "missing_configuration": [
+        "Meaning and duration of stability",
+        "any symptom, treatment, or medication limits",
+        "drug-specific relevant safety restrictions"
+      ],
+      "review_questions": [
+        "Are the metastases treated or clinically stable?",
+        "What symptoms or relevant concerns are actually documented?",
+        "What does this particular protocol say?"
+      ],
+      "anchors": [
+        {
+          "id": "BRAIN-A",
+          "vignette": "Treated, documented stable status, no active neurological symptoms, other configured requirements satisfied",
+          "expected_primary_review_route": "PROTOCOL_REVISION_REVIEW",
+          "required_guardrail": "The note supports review, not a universal automatic eligibility rule."
+        },
+        {
+          "id": "BRAIN-B",
+          "vignette": "Active symptoms and a relevant restriction explicitly documented in the hypothetical protocol",
+          "expected_primary_review_route": "RETAIN_RESTRICTION",
+          "required_guardrail": "Do not extrapolate evidence for stable disease to this case."
+        },
+        {
+          "id": "BRAIN-C",
+          "vignette": "Current stability assessment absent",
+          "expected_primary_review_route": "NEEDS_INFORMATION",
+          "required_guardrail": "Do not infer stability from a historical diagnosis."
+        },
+        {
+          "id": "BRAIN-D",
+          "vignette": "No brain metastases and all configured criteria satisfied",
+          "expected_primary_review_route": "NO_CASE_SPECIFIC_ACTION",
+          "required_guardrail": "Unaffected comparator."
+        },
+        {
+          "id": "BRAIN-E",
+          "vignette": "Stable metastases but an independent unchanged exclusion fails",
+          "expected_primary_review_route": "RETAIN_RESTRICTION",
+          "required_guardrail": "Target-criterion improvement cannot override another failure."
+        },
+        {
+          "id": "BRAIN-F",
+          "vignette": "Recorded blanket rejection despite a current protocol that explicitly permits the documented stable subgroup",
+          "expected_primary_review_route": "SCREENING_CORRECTION_REVIEW",
+          "required_guardrail": "Differentiate screening interpretation from revision of protocol wording."
+        }
+      ],
+      "presentation_line": "The original screen sees brain metastases. The review asks whether they are treated, stable, and actually relevant to the restriction being applied.",
+      "source_status": "provided_secondary_research_note_not_independently_verified",
+      "case_context": "separate_hypothetical_protocol_snapshot; not a universal extension of SYN-217"
+    },
+    {
+      "id": "OLDER",
+      "title": "Older adults with controlled comorbidities",
+      "source_lines": [
+        119,
+        160
+      ],
+      "source_category": [
+        "Lack of individualized assessment",
+        "Overly restrictive medical thresholds"
+      ],
+      "original_concern": "Functional status, cardiac disease, previous malignancies, and drug-specific concerns associated with those conditions.",
+      "reconsideration_basis": "The note distinguishes a historical or controlled condition from an active or severe condition; age alone does not resolve the eligibility question.",
+      "fields": [
+        "age_years",
+        "cardiac_history",
+        "current_cardiac_status",
+        "condition_severity_assessment",
+        "functional_assessment",
+        "current_comorbidity_treatment",
+        "drug_specific_concern",
+        "other_criteria_results"
+      ],
+      "missing_configuration": [
+        "Drug-specific cardiac restriction",
+        "functional-status requirements",
+        "severity and activity definitions"
+      ],
+      "review_questions": [
+        "Is the condition historical or active?",
+        "Is it controlled or severe under the supplied clinical assessment?",
+        "What specific relevance does it have to the drug and protocol?"
+      ],
+      "anchors": [
+        {
+          "id": "OLDER-A",
+          "vignette": "82-year-old with controlled cardiac history and no documented relevant concern in the reviewed fictional assessment",
+          "expected_primary_review_route": "PROTOCOL_REVISION_REVIEW",
+          "required_guardrail": "Do not make age an automatic risk penalty or declare safety from age or control alone."
+        },
+        {
+          "id": "OLDER-B",
+          "vignette": "Active cardiac problem meeting an explicit unchanged hypothetical restriction",
+          "expected_primary_review_route": "RETAIN_RESTRICTION",
+          "required_guardrail": "Retain the actual condition-specific restriction."
+        },
+        {
+          "id": "OLDER-C",
+          "vignette": "Historical diagnosis present but current function or severity unassessed",
+          "expected_primary_review_route": "NEEDS_INFORMATION",
+          "required_guardrail": "Historical code is not current clinical status."
+        },
+        {
+          "id": "OLDER-D",
+          "vignette": "Older patient already satisfying all configured criteria",
+          "expected_primary_review_route": "NO_CASE_SPECIFIC_ACTION",
+          "required_guardrail": "Show that older age does not automatically cause exclusion."
+        },
+        {
+          "id": "OLDER-E",
+          "vignette": "Controlled history but independent functional criterion fails",
+          "expected_primary_review_route": "RETAIN_RESTRICTION",
+          "required_guardrail": "Preserve separately documented restrictions."
+        },
+        {
+          "id": "OLDER-F",
+          "vignette": "Historic disease code misread as an active condition despite an explicit current-protocol distinction",
+          "expected_primary_review_route": "SCREENING_CORRECTION_REVIEW",
+          "required_guardrail": "Explain original screen versus computed criterion discrepancy."
+        }
+      ],
+      "presentation_line": "An 82-year-old with controlled heart disease is not the same clinical situation as someone with active cardiac instability. We show whether the screen recognized that difference.",
+      "source_status": "provided_secondary_research_note_not_independently_verified",
+      "case_context": "separate_hypothetical_protocol_snapshot; not a universal extension of SYN-217"
+    },
+    {
+      "id": "ACCESS",
+      "title": "Physical, sensory, and mobility accommodations",
+      "source_lines": [
+        174,
+        224
+      ],
+      "source_category": [
+        "Inadequate accommodations",
+        "Lack of individualized assessment"
+      ],
+      "original_concern": "Ability to attend visits and complete trial procedures; the note also describes broad investigator discretion.",
+      "reconsideration_basis": "Individualized assessment can identify transport, assistive-device, communication, or procedure accommodations instead of diagnosis-based assumptions.",
+      "fields": [
+        "functional_support_needs",
+        "required_study_tasks",
+        "task_specific_ability_assessment",
+        "accommodations_requested",
+        "accommodation_availability",
+        "availability_confirmation",
+        "procedure_validity_review",
+        "other_criteria_results"
+      ],
+      "missing_configuration": [
+        "Study tasks and allowed accommodation methods",
+        "confirmation of site resources",
+        "whether adapted procedures preserve the trial requirements"
+      ],
+      "review_questions": [
+        "Which specific task is blocked?",
+        "Is an accommodation actually available or merely proposed?",
+        "Does the accommodation preserve the relevant study procedure?",
+        "Is there a separate medical exclusion?"
+      ],
+      "anchors": [
+        {
+          "id": "ACCESS-A",
+          "vignette": "Clinical criteria satisfied; transport and assistive-device support confirmed for the required tasks",
+          "expected_primary_review_route": "ACCOMMODATION_REVIEW",
+          "required_guardrail": "Clinical eligibility and participation readiness are separate. Record resolved access barrier only after documented support."
+        },
+        {
+          "id": "ACCESS-B",
+          "vignette": "Support plan proposed but not confirmed",
+          "expected_primary_review_route": "ACCOMMODATION_REVIEW",
+          "required_guardrail": "Support-pending is not ready-to-participate."
+        },
+        {
+          "id": "ACCESS-C",
+          "vignette": "Task-specific assessment absent",
+          "expected_primary_review_route": "NEEDS_INFORMATION",
+          "required_guardrail": "Do not infer inability or readiness from a disability label."
+        },
+        {
+          "id": "ACCESS-D",
+          "vignette": "No relevant support barrier and clinical criteria satisfied",
+          "expected_primary_review_route": "NO_CASE_SPECIFIC_ACTION",
+          "required_guardrail": "Unaffected comparator."
+        },
+        {
+          "id": "ACCESS-E",
+          "vignette": "Access needs resolved but independent medical restriction fails",
+          "expected_primary_review_route": "RETAIN_RESTRICTION",
+          "required_guardrail": "Accommodations cannot erase a medical exclusion."
+        },
+        {
+          "id": "ACCESS-F",
+          "vignette": "Procedure modification requires unresolved scientific or procedural review",
+          "expected_primary_review_route": "ACCOMMODATION_REVIEW",
+          "required_guardrail": "Keep procedure review pending; do not claim the modification is accepted."
+        }
+      ],
+      "presentation_line": "This person was rejected because the team assumed they could not complete the visits. We show whether there is a real barrier, whether support can address it, and whether that support is actually available.",
+      "source_status": "provided_secondary_research_note_not_independently_verified",
+      "case_context": "separate_hypothetical_protocol_snapshot; not a universal extension of SYN-217"
+    },
+    {
+      "id": "COGNITIVE",
+      "title": "Intellectual disabilities and participation support",
+      "source_lines": [
+        230,
+        260
+      ],
+      "source_category": [
+        "Inadequate accommodations"
+      ],
+      "original_concern": "Independent completion of questionnaires, understanding instructions, and managing study procedures.",
+      "reconsideration_basis": "The note asks whether appropriate support could make participation possible instead of making independence a blanket requirement.",
+      "fields": [
+        "communication_support_needs",
+        "questionnaire_completion_method",
+        "procedure_support_plan",
+        "support_availability",
+        "consent_process_assessment_status",
+        "study_method_acceptability_review",
+        "other_criteria_results"
+      ],
+      "missing_configuration": [
+        "Trial-appropriate support arrangements",
+        "reviewed consent process",
+        "acceptability of adapted measurement or questionnaire methods"
+      ],
+      "review_questions": [
+        "What assistance is actually required?",
+        "Is it available?",
+        "Has the applicable consent process been separately assessed?",
+        "Would the supported method preserve the required assessment?"
+      ],
+      "anchors": [
+        {
+          "id": "COGNITIVE-A",
+          "vignette": "Communication and procedure support documented, with a separately completed fictional consent-process and method review",
+          "expected_primary_review_route": "ACCOMMODATION_REVIEW",
+          "required_guardrail": "Support may address participation needs; diagnosis is not a competence finding."
+        },
+        {
+          "id": "COGNITIVE-B",
+          "vignette": "Support person available but consent-process assessment pending",
+          "expected_primary_review_route": "ACCOMMODATION_REVIEW",
+          "required_guardrail": "A helper does not automatically resolve consent."
+        },
+        {
+          "id": "COGNITIVE-C",
+          "vignette": "Support needs or required task assessment unknown",
+          "expected_primary_review_route": "NEEDS_INFORMATION",
+          "required_guardrail": "Unknown support needs are not an exclusion by default."
+        },
+        {
+          "id": "COGNITIVE-D",
+          "vignette": "Patient completes the required tasks under an accepted method without extra support",
+          "expected_primary_review_route": "NO_CASE_SPECIFIC_ACTION",
+          "required_guardrail": "Do not assume all patients sharing a diagnosis have identical needs."
+        },
+        {
+          "id": "COGNITIVE-E",
+          "vignette": "Documented support but an independent medical restriction applies",
+          "expected_primary_review_route": "RETAIN_RESTRICTION",
+          "required_guardrail": "Keep medical criteria separate from accommodations."
+        },
+        {
+          "id": "COGNITIVE-F",
+          "vignette": "Questionnaire assistance proposed but measurement-method acceptability not assessed",
+          "expected_primary_review_route": "ACCOMMODATION_REVIEW",
+          "required_guardrail": "Do not claim proxy or assisted answers are automatically valid."
+        }
+      ],
+      "presentation_line": "Needing help with a questionnaire is not the same thing as being unable to participate. The review identifies what support is needed and what still requires a separate assessment.",
+      "source_status": "provided_secondary_research_note_not_independently_verified",
+      "case_context": "separate_hypothetical_protocol_snapshot; not a universal extension of SYN-217"
+    },
+    {
+      "id": "PRIOR",
+      "title": "Prior or concurrent malignancy",
+      "source_lines": [
+        270,
+        305
+      ],
+      "source_category": [
+        "Lack of individualized assessment"
+      ],
+      "original_concern": "Competing risks, interpretation of treatment effects, and interference with safety or efficacy endpoints.",
+      "reconsideration_basis": "The note describes considering prior or concurrent cancers when they are unlikely to interfere with the trial endpoints.",
+      "fields": [
+        "prior_cancer_history",
+        "time_since_treatment_years",
+        "recurrence_status",
+        "current_cancer_activity",
+        "other_cancer_treatment",
+        "endpoint_interference_assessment",
+        "safety_interference_assessment",
+        "other_criteria_results"
+      ],
+      "missing_configuration": [
+        "Endpoint-specific interference assessment",
+        "relevant treatment interaction assessment",
+        "any protocol-specific timing requirement"
+      ],
+      "review_questions": [
+        "Is the other cancer active?",
+        "Is treatment ongoing?",
+        "Does a documented assessment identify likely interference with safety or efficacy endpoints?"
+      ],
+      "anchors": [
+        {
+          "id": "PRIOR-A",
+          "vignette": "Prior breast cancer treated ten years ago with no recurrence and a documented low-interference fictional assessment",
+          "expected_primary_review_route": "PROTOCOL_REVISION_REVIEW",
+          "required_guardrail": "Ten years is an example, not a general disease-free cutoff."
+        },
+        {
+          "id": "PRIOR-B",
+          "vignette": "Other cancer or treatment documented to interfere with this trial endpoint or safety requirements",
+          "expected_primary_review_route": "RETAIN_RESTRICTION",
+          "required_guardrail": "The relevant interference, not history alone, explains the retained restriction."
+        },
+        {
+          "id": "PRIOR-C",
+          "vignette": "Recurrence or endpoint-interference assessment unavailable",
+          "expected_primary_review_route": "NEEDS_INFORMATION",
+          "required_guardrail": "Do not invent an interference judgment."
+        },
+        {
+          "id": "PRIOR-D",
+          "vignette": "No other cancer history and all configured criteria satisfied",
+          "expected_primary_review_route": "NO_CASE_SPECIFIC_ACTION",
+          "required_guardrail": "Unaffected comparator."
+        },
+        {
+          "id": "PRIOR-E",
+          "vignette": "Prior cancer not interfering but another unchanged restriction fails",
+          "expected_primary_review_route": "RETAIN_RESTRICTION",
+          "required_guardrail": "Do not override unrelated failures."
+        },
+        {
+          "id": "PRIOR-F",
+          "vignette": "Concurrent malignancy with a documented low-interference assessment under a current protocol that allows it",
+          "expected_primary_review_route": "SCREENING_CORRECTION_REVIEW",
+          "required_guardrail": "Concurrent or active status alone is not a universal exclusion in the source."
+        }
+      ],
+      "presentation_line": "A cancer treated ten years ago may have little relevance to this trial. We ask whether it actually interferes with the study, rather than excluding someone because the diagnosis remains in their history.",
+      "source_status": "provided_secondary_research_note_not_independently_verified",
+      "case_context": "separate_hypothetical_protocol_snapshot; not a universal extension of SYN-217"
+    },
+    {
+      "id": "PREG",
+      "title": "Pregnancy-specific evidence and research pathways",
+      "source_lines": [
+        313,
+        339
+      ],
+      "source_category": [
+        "Distinct research-pathway case; not an automatic inclusion revision"
+      ],
+      "original_concern": "Potential fetal harm and drug-specific pregnancy safety uncertainties.",
+      "reconsideration_basis": "The note identifies an evidence gap and the possibility of carefully designed pregnancy-specific research, not automatic admission to an existing trial.",
+      "fields": [
+        "pregnancy_status",
+        "trial_pregnancy_policy",
+        "drug_specific_pregnancy_evidence_status",
+        "documented_drug_specific_concern",
+        "research_pathway_review_status",
+        "oversight_review_status",
+        "other_criteria_results"
+      ],
+      "missing_configuration": [
+        "Drug-specific maternal/fetal evidence",
+        "a separately designed research protocol",
+        "appropriate clinical and oversight review"
+      ],
+      "review_questions": [
+        "What does the current trial permit?",
+        "Is there a relevant drug-specific concern?",
+        "Is the issue a missing research pathway rather than a correctable screen?"
+      ],
+      "anchors": [
+        {
+          "id": "PREG-A",
+          "vignette": "Pregnancy documented; current protocol excludes; only general participation rationale available",
+          "expected_primary_review_route": "SEPARATE_RESEARCH_PATHWAY",
+          "required_guardrail": "Do not create newly eligible transition."
+        },
+        {
+          "id": "PREG-B",
+          "vignette": "Drug-specific concern documented in the fictional protocol context",
+          "expected_primary_review_route": "RETAIN_RESTRICTION",
+          "required_guardrail": "Keep the current restriction and explain its context."
+        },
+        {
+          "id": "PREG-C",
+          "vignette": "Pregnancy status unknown where required by the supplied current protocol",
+          "expected_primary_review_route": "NEEDS_INFORMATION",
+          "required_guardrail": "Unknown is not not-pregnant."
+        },
+        {
+          "id": "PREG-D",
+          "vignette": "No pregnancy-related criterion triggered and other rules satisfied",
+          "expected_primary_review_route": "NO_CASE_SPECIFIC_ACTION",
+          "required_guardrail": "Comparator is not evidence supporting pregnancy inclusion."
+        },
+        {
+          "id": "PREG-E",
+          "vignette": "Pregnancy-specific evidence unavailable",
+          "expected_primary_review_route": "SEPARATE_RESEARCH_PATHWAY",
+          "required_guardrail": "Flag an evidence-development question, not a patient recommendation."
+        },
+        {
+          "id": "PREG-F",
+          "vignette": "Separate pregnancy-specific research idea documented but protocol and oversight not established",
+          "expected_primary_review_route": "SEPARATE_RESEARCH_PATHWAY",
+          "required_guardrail": "Research interest is not authorization or approved inclusion."
+        }
+      ],
+      "presentation_line": "Sometimes the answer is not to change this trial. It is to identify the evidence gap and the need for a separate, carefully reviewed research pathway.",
+      "source_status": "provided_secondary_research_note_not_independently_verified",
+      "case_context": "separate_hypothetical_protocol_snapshot; not a universal extension of SYN-217"
+    },
+    {
+      "id": "RENAL",
+      "title": "Reduced kidney function and threshold review",
+      "source_lines": [
+        347,
+        377
+      ],
+      "source_category": [
+        "Overly restrictive medical thresholds",
+        "Incorrect interpretation"
+      ],
+      "original_concern": "Drug processing and elimination in patients with impaired kidney function.",
+      "reconsideration_basis": "The note calls for reviewing the specific measurement, its currency, drug elimination, and evidence behind a cutoff rather than automatically overturning the decision.",
+      "fields": [
+        "renal_metric_type",
+        "renal_value",
+        "renal_unit",
+        "collection_date",
+        "laboratory_method",
+        "drug_elimination_evidence",
+        "configured_protocol_limit",
+        "configured_proposed_limit",
+        "measurement_currency_assessment",
+        "other_criteria_results"
+      ],
+      "missing_configuration": [
+        "The note supplies no actual renal cutoff",
+        "no maximum acceptable laboratory age",
+        "no dose adjustment or monitoring schedule"
+      ],
+      "review_questions": [
+        "Which renal metric does this protocol require?",
+        "Is the measurement current under a supplied rule?",
+        "Does drug-specific evidence support the proposed criterion?"
+      ],
+      "anchors": [
+        {
+          "id": "RENAL-A",
+          "vignette": "Below an explicitly configured original limit but inside a separately configured proposed demonstration limit",
+          "expected_primary_review_route": "PROTOCOL_REVISION_REVIEW",
+          "required_guardrail": "Use existing SYN-217 numeric boundaries only in that fictional study context."
+        },
+        {
+          "id": "RENAL-B",
+          "vignette": "Outside the supplied drug-evidence scope or subject to a documented renal restriction",
+          "expected_primary_review_route": "RETAIN_RESTRICTION",
+          "required_guardrail": "Do not extend below the evidence boundary."
+        },
+        {
+          "id": "RENAL-C",
+          "vignette": "Required measurement missing or currency unresolved",
+          "expected_primary_review_route": "NEEDS_INFORMATION",
+          "required_guardrail": "No invented freshness window."
+        },
+        {
+          "id": "RENAL-D",
+          "vignette": "Meets original limit and all other requirements",
+          "expected_primary_review_route": "NO_CASE_SPECIFIC_ACTION",
+          "required_guardrail": "Unaffected comparator."
+        },
+        {
+          "id": "RENAL-E",
+          "vignette": "Renal change supported in the demo but medication interaction still fails",
+          "expected_primary_review_route": "RETAIN_RESTRICTION",
+          "required_guardrail": "Evaluate all criteria."
+        },
+        {
+          "id": "RENAL-F",
+          "vignette": "Outdated or wrong-metric measurement used in recorded screen; correct comparable data must be obtained or reviewed",
+          "expected_primary_review_route": "SCREENING_CORRECTION_REVIEW",
+          "required_guardrail": "Creatinine clearance and eGFR fields must not be silently interchanged."
+        }
+      ],
+      "presentation_line": "The number matters, but so do the measurement used, when it was taken, and what is known about the drug. We bring those pieces together before asking whether the restriction should change.",
+      "source_status": "provided_secondary_research_note_not_independently_verified",
+      "case_context": "separate_hypothetical_protocol_snapshot; not a universal extension of SYN-217"
+    }
+  ]
+}

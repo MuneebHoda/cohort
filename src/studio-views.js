@@ -1,3 +1,5 @@
+import { renderInvestigationSummary, renderInvestigationAnalytics, renderInvestigationDecision, renderInvestigationReport } from './investigation-views.js';
+import { investigationSources } from './case-packs.js';
 import { study, sources, anchorPatients, clinicalConfig } from './data.js';
 import { reviewConfig } from './review-fixture.js';
 import { visibleRecords, datasetDefinitions, reviewActions } from './workspace.js';
@@ -27,11 +29,13 @@ export function renderSceneStory(run) {
 }
 
 export function renderTrialSummary(run) {
+  if (run.casePack) return renderInvestigationSummary(run);
   const delta = pct(run.proposed.eligible, run.original.total) - pct(run.original.eligible, run.original.total);
   return `<div class="perspective-heading"><div><span class="studio-eyebrow">TRIAL STRATEGY</span><h2>A wider modeled candidate pool.</h2><p>Compare coverage and composition within this synthetic screened dataset.</p></div><button class="studio-button" data-action="report">${icon('file')} Review packet</button></div><section class="coverage-comparison" aria-label="Modeled matching coverage"><div class="coverage-row"><span>Original protocol</span><div class="coverage-track"><i style="--bar:${pct(run.original.eligible, run.original.total)}%"></i></div><strong>${run.original.eligible} / ${run.original.total}<small>${pct(run.original.eligible, run.original.total)}%</small></strong></div><div class="coverage-row proposed"><span>Proposed renal scenario</span><div class="coverage-track"><i style="--bar:${pct(run.proposed.eligible, run.proposed.total)}%"></i></div><strong>${run.proposed.eligible} / ${run.proposed.total}<small>${pct(run.proposed.eligible, run.proposed.total)}%</small></strong></div><div class="coverage-foot"><strong>+${Math.round(delta * 10) / 10} percentage points</strong><span>${run.proposed.newlyEligible} newly matching · ${run.proposed.excluded} excluded · ${run.proposed.indeterminate} indeterminate under the proposed scenario</span></div><p>Modeled matching coverage of ${run.original.total} synthetic records. This is not measured recruitment, actual enrollment, or coverage of all disease patients.</p></section>`;
 }
 
 export function renderTrialAnalytics(run, state) {
+  if (run.casePack) return renderInvestigationAnalytics(run,state);
   return `${renderComposition(run, state)}<section class="studio-sheet subgroup-sheet"><div class="sheet-heading"><div><span class="studio-eyebrow">CLINICAL COMPOSITION</span><h3>Clinical context behind the counts.</h3></div></div><div class="subgroup-table"><div class="subgroup-labels"><span>Recorded subgroup</span><span>Screened / proposed matching</span></div>${run.subgroups.filter(group => group.screened).map(group => `<button data-subgroup="${e(group.id)}" class="${state.filters.subgroup === group.id ? 'selected' : ''}" aria-pressed="${state.filters.subgroup === group.id}"><span>${e(group.label)}</span><strong>${group.screened} <span>/</span> ${group.proposed}</strong>${icon('chevron')}</button>`).join('')}</div><p class="sheet-note">Clinical subgroups overlap. Do not add their counts as if they were distinct people.</p></section>${renderMissingness(run)}<section class="studio-sheet missing-demographics"><span class="studio-eyebrow">LIMITS OF INTERPRETATION</span><h3>Composition, not representativeness.</h3><p>${run.dataset.id === 'casebook' ? 'The reference case has no supplied sex, gender, race, ethnicity or site metadata.' : 'Demographic distributions and fictional sites are authored showcase assumptions, not estimates of the disease population.'} No compatible reference population, geographic reach, actual enrollment or recruitment data is supplied. No diversity score, coverage map or market-reach claim is calculated.</p></section>`;
 }
 
@@ -39,6 +43,7 @@ const traceSteps = [['source', '01', 'Source', 'Registry and passage'], ['criter
 const predicateFields = rule => rule?.field ? [rule.field] : (rule?.conditions || []).flatMap(predicateFields);
 
 export function renderDecision(workspace, traceStep = 'source', traceCriterion = 'RENAL') {
+  if (workspace.run.casePack) return renderInvestigationDecision(workspace,traceStep);
   const { run, state, events } = workspace;
   const record = run.current.records.find(r => r.id === state.selectedPatientId);
   if (!record) return '<section class="studio-sheet"><h2>Select a patient to inspect a decision.</h2><p>No patient matches the current selection. Clear filters or open the patient table; the loaded cohort has not changed.</p><button class="studio-button" data-action="clear-filters">Clear filters</button><button class="studio-button" data-perspective="patient">Open patient table</button></section>';
@@ -73,10 +78,11 @@ function renderEvents(events, selectableIds = null) {
 export function buildReviewPacket(workspace) {
   const { run, state } = workspace;
   const shown = visibleRecords(run, state.filters);
-  return { title: 'Cohort synthetic demonstration review packet', syntheticOnly: true, exportedAt: new Date().toISOString(), analysis: run, context: { ...state }, filteredPatientIds: shown.map(r => r.id), evidence: clinicalConfig.evidence, scoring: reviewConfig, events: [...workspace.events], limitations: ['Fictional drug and patient records; no clinical validation.', 'The reference case uses a renal-stability adapter assumption; generated flags are synthetic; longitudinal evidence is not supplied.', 'The index is unvalidated reviewer attention, not probability of harm or enrollment approval.', 'Local session events are not a tamper-proof production audit trail.'] };
+  return { title: 'Cohort synthetic demonstration review packet', syntheticOnly: true, exportedAt: new Date().toISOString(), analysis: run, context: { ...state }, filteredPatientIds: shown.map(r => r.id), evidence: run.casePack ? [...investigationSources.filter(source=>source.id===run.casePack.sourceId || source.id==='RESEARCH-NOTE'), ...(run.casePack.id==='RENAL'?clinicalConfig.evidence:[])] : clinicalConfig.evidence, scoring: run.casePack ? {status:'not-configured',note:'Not configured for this case'} : reviewConfig, events: [...workspace.events], limitations: run.casePack ? ['Authored fictional patients, protocol snapshots and assessments; no clinical validation.', 'Original research note unavailable; case-specification summaries are secondary and not independently verified.', 'Investigation routes and participation readiness do not override current eligibility.', 'Missing proposed criteria require configuration; no default clinical thresholds.', 'Local session review events are not authenticated clinical approvals.'] : ['Fictional drug and patient records; no clinical validation.', 'The reference case uses a renal-stability adapter assumption; generated flags are synthetic; longitudinal evidence is not supplied.', 'The index is unvalidated reviewer attention, not probability of harm or enrollment approval.', 'Local session events are not a tamper-proof production audit trail.'] };
 }
 
 export function renderReport(workspace) {
+  if (workspace.run.casePack) return renderInvestigationReport(workspace);
   const { run, state, events } = workspace;
   const shown = visibleRecords(run, state.filters);
   const changed = run.current.records.filter(r => r.statusChanged);

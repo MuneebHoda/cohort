@@ -7,6 +7,8 @@ import { evaluateCohort, evaluatePatient } from './cohort.js';
 import { getReviewProfile, rankCandidates } from './ranking.js';
 import { reviewConfig } from './review-fixture.js';
 import { sources, study } from './data.js';
+import { casePackDefinitions, generateCasePack, investigationSettings, investigationSources, routeDefinitions } from './case-packs.js';
+import { evaluateInvestigationPack } from './investigation.js';
 
 const booleanFields = ['strong_cyp3a_inhibitor', 'clinically_unstable_cardiac_disease', 'controlled_hypertension', 'stable_type2_diabetes', 'stable_cardiac_history', 'renal_stable'];
 const ageDefinitions = [['under65', 'Under 65', age => age < 65], ['65to74', '65–74', age => age >= 65 && age < 75], ['75plus', '75+', age => age >= 75], ['unknown', 'Age not recorded', () => false]];
@@ -19,6 +21,7 @@ export const reviewActions = [
 export const datasetDefinitions = {
   casebook: { id: 'casebook', label: 'Reference case — 20 synthetic patients', shortLabel: 'Reference case', baselineCount: 20, version: 'casebook-v1', initialPatientId: 'P03', seed: null, asOfDate: null, configVersion: '1.0.0' },
   expanded: { id: 'expanded', label: `Expanded cohort — ${showcaseConfig.count} synthetic patients`, shortLabel: 'Expanded cohort', baselineCount: showcaseConfig.count, version: `expanded-v${showcaseConfig.version}-seed${showcaseConfig.seed}`, initialPatientId: 'SYN-0001', seed: showcaseConfig.seed, asOfDate: showcaseConfig.asOfDate, configVersion: showcaseConfig.version },
+  ...Object.fromEntries(Object.values(casePackDefinitions).map(pack => [`case-${pack.id.toLowerCase()}`, { id: `case-${pack.id.toLowerCase()}`, casePackId: pack.id, label: `${pack.id} — ${pack.title}`, shortLabel: pack.title, baselineCount: 6 + investigationSettings.variantsPerPack, version: `case-${pack.id}-v${investigationSettings.version}`, initialPatientId: `${pack.id}-A`, seed: investigationSettings.seed, asOfDate: investigationSettings.asOfDate, configVersion: investigationSettings.version }])),
 };
 const blank = value => value === undefined || value === null || typeof value === 'string' && (!value.trim() || ['unknown', 'not_collected'].includes(value.trim().toLowerCase()));
 const knownNumber = value => typeof value === 'number' && Number.isFinite(value);
@@ -48,6 +51,14 @@ function groups(patients, original, proposed, definitions) {
 
 function makeRun(id, datasetVersion, scenarioId, patients, dataset) {
   const records = clone(patients);
+  if (dataset.casePackId) {
+    const result = evaluateInvestigationPack(records, dataset.casePackId, scenarioId);
+    const ageGroups = groups(records, result.original, result.proposed, ageDefinitions.map(([key, label]) => [key, label, record => ageFor(record) === key]));
+    return freeze({ id, createdAt: new Date().toISOString(), studyId: result.casePack.studyId, datasetVersion, dataset, scenarioId, patients: records, ...result, ageGroups,
+      subgroups: result.investigationSummary.routes.map(route => ({ id: route.id, label: route.label, screened: route.count, original: result.original.records.filter(r => route.ids.includes(r.id) && r.status === 'eligible').length, proposed: result.proposed.records.filter(r => route.ids.includes(r.id) && r.status === 'eligible').length, ids: route.ids })),
+      demographics: calculateComposition(records, result.original, result.proposed), missingness: [],
+    });
+  }
   const original = evaluateCohort(records, false);
   const proposed = evaluateCohort(records, 'renal-revision');
   const current = scenarioId === 'original' ? original : scenarioId === 'renal-revision' ? proposed : evaluateCohort(records, scenarioId);
@@ -130,9 +141,9 @@ export function evaluateDraft(draft, existingRecords = []) {
 export function createWorkspace({ dataset = 'expanded' } = {}) {
   if (!datasetDefinitions[dataset]) throw new TypeError('Unknown synthetic dataset.');
   const bases = {};
-  const baseFor = id => bases[id] ||= id === 'casebook' ? clone(anchorPatients) : generateShowcase();
-  const additions = { casebook: [], expanded: [] };
-  const revisions = { casebook: 0, expanded: 0 };
+  const baseFor = id => bases[id] ||= datasetDefinitions[id].casePackId ? generateCasePack(datasetDefinitions[id].casePackId) : id === 'casebook' ? clone(anchorPatients) : generateShowcase();
+  const additions = Object.fromEntries(Object.keys(datasetDefinitions).map(id => [id, []]));
+  const revisions = Object.fromEntries(Object.keys(datasetDefinitions).map(id => [id, 0]));
   const subscribers = new Set();
   let state = freeze({ studyId: study.id, perspective: 'patient', selectedPatientId: datasetDefinitions[dataset].initialPatientId, selectedEvidenceId: null, scenarioId: 'original', scenarioVersion: clinicalConfig.protocol.version, dataset, datasetVersion: datasetDefinitions[dataset].version, analysisRunId: '', filters: filtersInitial(), detailTab: 'overview', queuePage: 0, compositionDimension: dataset === 'casebook' ? 'age' : 'sex', reviewDispositions: {} });
   let runs = freeze([]);
@@ -141,7 +152,7 @@ export function createWorkspace({ dataset = 'expanded' } = {}) {
   const update = partial => { state = freeze({ ...state, ...partial }); };
   const notify = () => { for (const fn of subscribers) fn(state, run); };
   function log(type, reason, affectedIds = [], extra = {}) {
-    const event = freeze({ id: `EVT-${String(events.length + 1).padStart(3, '0')}`, type, actor: 'Demo reviewer', authenticated: false, timestamp: new Date().toISOString(), reason, runId: run.id, datasetVersion: run.datasetVersion, scenarioId: run.scenarioId, versions: run.configVersions, affectedIds: [...affectedIds], ...extra });
+    const event = freeze({ id: `EVT-${String(events.length + 1).padStart(3, '0')}`, type, actor: 'Demo reviewer', authenticated: false, timestamp: new Date().toISOString(), reason, studyId: run.studyId, runId: run.id, datasetVersion: run.datasetVersion, scenarioId: run.scenarioId, versions: run.configVersions, affectedIds: [...affectedIds], ...extra });
     events = freeze([...events, event]);
     return event;
   }
@@ -161,10 +172,11 @@ export function createWorkspace({ dataset = 'expanded' } = {}) {
     }
     const filteredRecords = visibleRecords(run, state.filters);
     const selectionCompatible = (type === 'dataset-changed' ? filteredRecords : run.patients).some(record => record.id === state.selectedPatientId);
-    const selected = selectionCompatible ? state.selectedPatientId : filteredRecords[0]?.id || null;
+    const initial = run.casePack && filteredRecords.some(record=>record.id===datasetDefinitions[state.dataset].initialPatientId) ? datasetDefinitions[state.dataset].initialPatientId : null;
+    const selected = selectionCompatible ? state.selectedPatientId : initial || filteredRecords[0]?.id || null;
     const visible = visibleRecords(run, state.filters);
     const selectedIndex = visible.findIndex(record => record.id === selected);
-    update({ analysisRunId: run.id, selectedPatientId: selected, queuePage: selectedIndex < 0 ? 0 : Math.floor(selectedIndex / queuePageSize), scenarioVersion: run.current.gate.scenarioVersion || clinicalConfig.protocol.version });
+    update({ studyId: run.studyId, analysisRunId: run.id, selectedPatientId: selected, queuePage: selectedIndex < 0 ? 0 : Math.floor(selectedIndex / queuePageSize), scenarioVersion: run.current.gate.scenarioVersion || clinicalConfig.protocol.version });
     const affectedIds = previous ? run.current.records.filter(record => {
       const prior = previous.current.records.find(item => item.id === record.id);
       return !prior || prior.status !== record.status || prior.evaluations.some((evaluation, index) => evaluation.result !== record.evaluations[index]?.result);
@@ -187,6 +199,7 @@ export function createWorkspace({ dataset = 'expanded' } = {}) {
     setQueuePage(page) { const maximum = Math.max(0, Math.ceil(visibleRecords(run, state.filters).length / queuePageSize) - 1); if (!Number.isInteger(page) || page < 0 || page > maximum) throw new RangeError('Unknown patient table page.'); if (page !== state.queuePage) { update({ queuePage: page }); notify(); } },
     setCompositionDimension(field) { if (field !== 'age' && !demographicDefinitions.some(item => item.id === field)) throw new TypeError('Unknown composition dimension.'); if (field !== state.compositionDimension) { update({ compositionDimension: field }); notify(); } },
     setScenario(id) {
+      if (run.casePack && id !== 'original' && !(run.casePack.id === 'RENAL' && id === 'renal-revision')) throw new TypeError('A proposed medical scenario requires case-specific configuration.');
       if (id !== 'original' && !clinicalConfig.scenarios.some(scenario => scenario.id === id)) throw new TypeError('Unknown scenario.');
       if (id === state.scenarioId) return;
       const priorScenarioId = state.scenarioId;
@@ -195,12 +208,14 @@ export function createWorkspace({ dataset = 'expanded' } = {}) {
     setDataset(value) {
       if (!Object.hasOwn(datasetDefinitions, value)) throw new TypeError('Unknown synthetic dataset.');
       if (value === state.dataset) return;
-      update({ dataset: value, datasetVersion: additions[value].length ? `${datasetDefinitions[value].version}-working-${revisions[value]}` : datasetDefinitions[value].version });
+      const caseChanged = Boolean(datasetDefinitions[value].casePackId || run.casePack);
+      update({ dataset: value, datasetVersion: additions[value].length ? `${datasetDefinitions[value].version}-working-${revisions[value]}` : datasetDefinitions[value].version, ...(caseChanged ? { scenarioId: 'original', filters: filtersInitial(), compositionDimension: 'age' } : {}) });
       analyze('dataset-changed', `Opened ${datasetDefinitions[value].label}.`); notify();
     },
     setDetailTab(tab) { if (!['overview', 'criteria', 'evidence', 'pathway'].includes(tab)) throw new TypeError('Unknown patient detail tab.'); if (tab !== state.detailTab) { update({ detailTab: tab }); notify(); } },
-    setEvidence(idOrNull) { if (idOrNull !== null && !sources.some(source => source.id === idOrNull)) throw new TypeError('Unknown evidence ID.'); if (idOrNull !== state.selectedEvidenceId) { update({ selectedEvidenceId: idOrNull }); notify(); } },
+    setEvidence(idOrNull) { if (idOrNull !== null && ![...sources, ...investigationSources].some(source => source.id === idOrNull)) throw new TypeError('Unknown evidence ID.'); if (idOrNull !== state.selectedEvidenceId) { update({ selectedEvidenceId: idOrNull }); notify(); } },
     addProfile(draft) {
+      if (run.casePack) throw new TypeError('Profile authoring is not configured for this case pack.');
       const result = validateProfile(draft, run.patients);
       if (!result.valid) { const error = new Error('The synthetic profile contains invalid fields.'); error.errors = result.errors; throw error; }
       additions[state.dataset].push(clone(result.record));
@@ -210,7 +225,7 @@ export function createWorkspace({ dataset = 'expanded' } = {}) {
     },
     recordDisposition({ patientId, disposition, reason }) {
       if (!run.patients.some(record => record.id === patientId)) throw new TypeError('Unknown patient ID.');
-      if (![...reviewActions.map(([id]) => id), 'reviewed', 'further-review'].includes(disposition)) throw new TypeError('Unknown review disposition.');
+      if (![...reviewActions.map(([id]) => id), ...(run.casePack ? routeDefinitions.map(([id])=>id) : []), 'reviewed', 'further-review'].includes(disposition)) throw new TypeError('Unknown review disposition.');
       if (typeof reason !== 'string' || !reason.trim()) throw new TypeError('A review rationale is required.');
       const event = log('disposition-recorded', reason.trim(), [patientId], { patientId, disposition });
       update({ reviewDispositions: { ...state.reviewDispositions, [`${state.dataset}/${run.id}/${patientId}`]: { runId: run.id, eventId: event.id, disposition, reason: event.reason, timestamp: event.timestamp } } });

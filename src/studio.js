@@ -1,3 +1,4 @@
+import { investigationSources, renderCaseSource, renderCaseTool } from './investigation-views.js';
 import { product, study, sources, clinicalConfig } from './data.js';
 import { demoCase } from './clinical-fixture.js';
 import { getReviewProfile } from './ranking.js';
@@ -40,7 +41,7 @@ export function mountStudio() {
   document.body.classList.add('studio-body');
   document.title = 'Cohort — Live Trial Review Studio';
   document.querySelector('meta[name="theme-color"]').content = getComputedStyle(document.documentElement).getPropertyValue('--app-background').trim();
-  app.innerHTML = `<header class="studio-header"><a class="studio-brand" href="#patient" aria-label="Cohort patient review"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="16" cy="15" r="8"/><circle cx="25" cy="15" r="8"/><circle cx="20.5" cy="23" r="8"/></svg><span>${e(product.wordmark)}</span></a><div class="studio-study"><span>CLINICAL DEVELOPMENT / ${e(study.phase).toUpperCase()}</span><h1>${e(study.drug)} <span>${e(study.title.replace(study.drug, '').trim())}</span></h1></div><span class="synthetic-pill">${icon('flask')} Synthetic demonstration</span><div class="studio-header-actions"><button id="patients-toggle" class="studio-button patients-toggle" data-action="open-queue" aria-haspopup="dialog" aria-controls="patient-queue-dialog">${icon('people')}<span>Patients</span><strong></strong></button><button class="studio-icon-button" data-action="guide" aria-label="Open demonstration guide" title="Demonstration guide">${icon('book')}</button><button class="studio-reset" data-action="reset">${icon('reset')}<span>Reset dataset</span></button></div></header>
+  app.innerHTML = `<header class="studio-header"><a class="studio-brand" href="#patient" aria-label="Cohort patient review"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="16" cy="15" r="8"/><circle cx="25" cy="15" r="8"/><circle cx="20.5" cy="23" r="8"/></svg><span>${e(product.wordmark)}</span></a><div class="studio-study" id="active-study"><span>CLINICAL DEVELOPMENT / ${e(study.phase).toUpperCase()}</span><h1>${e(study.drug)} <span>${e(study.title.replace(study.drug, '').trim())}</span></h1></div><span class="synthetic-pill">${icon('flask')} Synthetic demonstration</span><div class="studio-header-actions"><button id="patients-toggle" class="studio-button patients-toggle" data-action="open-queue" aria-haspopup="dialog" aria-controls="patient-queue-dialog">${icon('people')}<span>Patients</span><strong></strong></button><button class="studio-icon-button" data-action="guide" aria-label="Open demonstration guide" title="Demonstration guide">${icon('book')}</button><button class="studio-reset" data-action="reset">${icon('reset')}<span>Reset dataset</span></button></div></header>
     <div class="studio-navigation"><nav aria-label="Workspace perspectives" id="perspective-tabs"></nav><div id="scenario-controls"></div><details class="study-tools-menu"><summary>${icon('file')}<span>Study tools</span>${icon('chevron')}</summary><div><button data-tool="protocol">Study protocol</button><button data-tool="criteria">Criterion review desk</button><button data-tool="population">Boundary explorer</button><button data-action="report">Current review packet</button><button data-action="guide">Demonstration guide</button></div></details></div>
     <div id="workspace-context" class="workspace-context"></div>
     <main id="main" tabindex="-1" class="studio-main"><section id="patient-perspective" aria-label="Patient Review"><button class="mobile-population-jump studio-button" data-action="population-jump">Explore population ↘</button><div class="patient-studio-layout"><div class="population-stage-column"><div id="patient-scene-slot"></div><section id="scene-story" class="scene-story"></section><div class="stage-reading-note">${icon('shield')} Explicit rules. Traceable evidence. Expert review required.</div></div><div class="patient-detail-region"><button class="mobile-back" data-action="back-to-queue">← Back to patient queue</button><div id="patient-detail"></div></div></div></section>
@@ -111,8 +112,10 @@ export function mountStudio() {
     app.classList.toggle('mobile-detail-open', mobileDetailOpen);
     document.querySelector('.mobile-back').textContent = mobileReturnToStage ? '← Back to population' : '← Back to patient queue';
     patch('perspective-tabs', [['patient', 'people', 'Patient Review'], ['trial', 'chart', 'Trial Strategy'], ['decision', 'shield', 'Decision Review']].map(([id, symbol, label]) => `<button data-perspective="${id}" ${state.perspective === id ? 'aria-current="page"' : ''} class="perspective-tab ${state.perspective === id ? 'active' : ''}">${icon(symbol)}<span>${label}</span></button>`).join(''));
-    patch('scenario-controls', `<div class="scenario-segmented" aria-label="Active protocol scenario"><button data-scenario="original" aria-pressed="${state.scenarioId === 'original'}" class="${state.scenarioId === 'original' ? 'active' : ''}">Original</button><button data-scenario="renal-revision" aria-pressed="${state.scenarioId === 'renal-revision'}" class="${state.scenarioId === 'renal-revision' ? 'active proposed' : ''}">Proposed <span>renal</span></button></div><details class="scenario-advanced"><summary aria-label="Inspect evidence-gated scenario options" title="Scenario options">${icon('layers')}</summary><div><label for="scenario-options">Predefined scenario</label><select id="scenario-options"><option value="original" ${state.scenarioId === 'original' ? 'selected' : ''}>Original protocol</option>${clinicalConfig.scenarios.map(s => `<option value="${e(s.id)}" ${state.scenarioId === s.id ? 'selected' : ''}>${e(s.label)} · ${e(s.status)}</option>`).join('')}</select><strong>${e(run.current.gate.active ? 'Applied to synthetic comparison' : run.current.gate.requested ? 'Withheld · original rules retained' : 'Original rules active')}</strong><p>${e(run.current.gate.reasons.join(' ') || 'No revision is currently applied. Proposed rules require explicit registered support and synthetic-demonstration approval.')}</p><small>Approval here applies only to this synthetic demo.</small></div></details>`);
-    patch('workspace-context', renderContext(run, state));
+    patch('active-study', run.casePack ? `<span>EXCLUSION INVESTIGATION / AUTHORED PROTOCOL SNAPSHOTS</span><h1>${e(run.casePack.id)} <span>${e(run.casePack.title)}</span></h1>` : `<span>CLINICAL DEVELOPMENT / ${e(study.phase).toUpperCase()}</span><h1>${e(study.drug)} <span>${e(study.title.replace(study.drug, '').trim())}</span></h1>`);
+    if (run.casePack && !run.casePack.proposedConfigured) patch('scenario-controls', '<span class="case-scenario-note">Current protocol snapshots</span><button class="studio-button" data-action="assumptions">Proposed criteria: requires configuration</button>');
+    else patch('scenario-controls', `<div class="scenario-segmented" aria-label="Active protocol scenario"><button data-scenario="original" aria-pressed="${state.scenarioId === 'original'}" class="${state.scenarioId === 'original' ? 'active' : ''}">Original</button><button data-scenario="renal-revision" aria-pressed="${state.scenarioId === 'renal-revision'}" class="${state.scenarioId === 'renal-revision' ? 'active proposed' : ''}">Proposed <span>renal</span></button></div><details class="scenario-advanced"><summary aria-label="Inspect evidence-gated scenario options" title="Scenario options">${icon('layers')}</summary><div><label for="scenario-options">Predefined scenario</label><select id="scenario-options"><option value="original" ${state.scenarioId === 'original' ? 'selected' : ''}>Original protocol</option>${clinicalConfig.scenarios.filter(s=>!run.casePack || s.id==='renal-revision').map(s => `<option value="${e(s.id)}" ${state.scenarioId === s.id ? 'selected' : ''}>${e(s.label)} · ${e(s.status)}</option>`).join('')}</select><strong>${e(run.current.gate.active ? 'Applied to synthetic comparison' : run.current.gate.requested ? 'Withheld · original rules retained' : 'Original rules active')}</strong><p>${e(run.current.gate.reasons.join(' ') || 'No revision is currently applied. Proposed rules require explicit registered support and synthetic-demonstration approval.')}</p><small>Approval here applies only to this synthetic demo.</small></div></details>`);
+    patch('workspace-context', renderContext(run, state) + (run.casePack ? `<details class="case-context-summary"><summary>${icon('info')} Case context & source</summary><p><strong>Original concern:</strong> ${e(run.casePack.original_concern)}</p><p><strong>Review basis:</strong> ${run.casePack.source_category.map(e).join(' · ')}</p><p><strong>Investigate:</strong> ${e(run.casePack.reconsideration_basis)}</p><p><strong>Missing configuration:</strong> ${run.casePack.missing_configuration.map(e).join('; ')}.</p><button class="studio-source-link" data-source="${e(run.casePack.sourceId)}">Supplied case passage ↗</button><div class="case-anchor-links">${run.patients.filter(p=>p.provenance.type==='hand-authored-anchor').map(p=>`<button class="studio-button" data-patient="${e(p.id)}">${e(p.id)}</button>`).join('')}</div></details>` : ''));
     for (const name of ['patient', 'trial', 'decision']) document.getElementById(`${name}-perspective`).hidden = state.perspective !== name;
     document.querySelector('#patients-toggle strong').textContent = run.current.total;
     document.querySelector('#patients-toggle').setAttribute('aria-label', `Open patient explorer, ${run.current.total} synthetic records`);
@@ -155,6 +158,8 @@ export function mountStudio() {
   }
 
   function selectPatient(id, origin = 'table') {
+    const caseContext = document.querySelector('.case-context-summary');
+    if (caseContext) caseContext.open = false;
     const fromQueue = queueDialog.open;
     closeQueue(false);
     if (fromQueue && workspace.state.perspective !== 'patient') navigate('patient');
@@ -218,7 +223,7 @@ export function mountStudio() {
   function renderTool() {
     const label = { protocol: 'Study protocol', criteria: 'Criterion review desk', population: 'Boundary explorer', report: 'Current review packet', assumptions: 'Dataset assumptions & provenance' }[tool] || 'Demonstration guide';
     const actions = tool === 'report' ? `<button class="studio-button" data-action="export">${icon('download')} Export JSON</button><button class="studio-button primary" data-action="print">${icon('print')} Print / PDF</button>` : '';
-    patch(toolDialog, `${toolHeader(label, actions)}<div class="tool-content">${tool === 'report' ? renderReport(workspace) : tool === 'assumptions' ? renderAssumptions(workspace.run) : renderStudyTool(tool, { state: { ...workspace.state, ...toolState, criterion: toolCriterion }, run: workspace.run })}</div>`);
+    patch(toolDialog, `${toolHeader(label, actions)}<div class="tool-content">${tool === 'report' ? renderReport(workspace) : workspace.run.casePack ? renderCaseTool(workspace.run) : tool === 'assumptions' ? renderAssumptions(workspace.run) : renderStudyTool(tool, { state: { ...workspace.state, ...toolState, criterion: toolCriterion }, run: workspace.run })}</div>`);
   }
 
   function showTool(name) {
@@ -231,6 +236,8 @@ export function mountStudio() {
   }
 
   function openEvidence(id) {
+    const caseSource = investigationSources.find(source=>source.id===id);
+    if (caseSource) { workspace.setEvidence(id); evidenceDialog.innerHTML = renderCaseSource(caseSource,workspace.run.id); if (!evidenceDialog.open) evidenceDialog.showModal(); transitionPanel(evidenceDialog,'drawer'); return; }
     const source = sources.find(s => s.id === id);
     if (!source) return;
     workspace.setEvidence(id);
@@ -275,6 +282,7 @@ export function mountStudio() {
   }
 
   function showProfile() {
+    if (workspace.run.casePack) { announce('Profile authoring is not configured for this case pack.'); return; }
     closeQueue(false);
     if (!profileDraft.id) {
       let index = 1;
@@ -422,6 +430,7 @@ export function mountStudio() {
     if (event.target.matches('[data-review-form] [name="reason"]')) event.target.setCustomValidity('');
   });
   document.addEventListener('change', event => {
+    if (event.target.matches('[data-filter-route]')) workspace.setFilters({subgroup:event.target.value});
     if (event.target.id === 'scenario-options') changeScenario(event.target.value);
     if (event.target.id === 'dataset-selector') changeDataset(event.target.value);
     if (event.target.id === 'trace-criterion') { traceCriterion = event.target.value; render(); }
