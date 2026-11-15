@@ -1,3 +1,4 @@
+import { renderExclusionChart, renderCompositionComparison, renderEvidenceMatrix } from './analysis-views.js';
 import { escape as e, icon } from './ui.js';
 
 const statuses = [
@@ -88,7 +89,7 @@ function flowPaths(run, data) {
     start.cursor += thickness; end.cursor += thickness;
     const path = `M 26 ${y1} C 225 ${y1}, 375 ${y2}, 574 ${y2} L 574 ${y2 + thickness} C 375 ${y2 + thickness}, 225 ${y1 + thickness}, 26 ${y1 + thickness} Z`;
     const tone = transfer.to === 'eligible' && transfer.from !== 'eligible' ? 'new' : statuses.find(status => status.id === transfer.to).tone;
-    return `<path class="flow-ribbon chart-tone-${tone}" d="${path}" data-flow-from="${transfer.from}" data-flow-to="${transfer.to}" data-flow-count="${transfer.count}"></path>`;
+    return `<path class="flow-ribbon chart-tone-${tone}" d="${path}" data-flow-from="${transfer.from}" data-flow-to="${transfer.to}" data-flow-count="${transfer.count}" data-analysis-group="flow:${transfer.from}:${transfer.to}" role="button" tabindex="0" aria-label="Inspect ${transfer.count} records: original ${labelFor(transfer.from)} to proposed ${labelFor(transfer.to)}"></path>`;
   }).join('');
   return `${paths}${['original', 'proposed'].map(side => statuses.map(status => { const node = nodes[side][status.id]; return node.height ? `<rect class="flow-node chart-tone-${status.tone}" x="${side === 'original' ? 18 : 574}" y="${node.y}" width="8" height="${node.height}" rx="2"/>` : ''; }).join('')).join('')}`;
 }
@@ -103,7 +104,7 @@ export function renderFlowChart(run) {
     <div class="flow-metrics"><div><strong>+${newly}</strong><span>newly meet modeled rules</span></div><div><strong>${uncertain}</strong><span>become indeterminate</span></div></div>
     <figure><div class="flow-axis"><span>Original protocol</span><span>Proposed renal</span></div><svg viewBox="0 0 600 220" preserveAspectRatio="none" class="flow-svg" aria-hidden="true">${data.total ? flowPaths(run, data) : ''}</svg>
     <figcaption class="flow-caption">${statuses.map(status => `<div><span><i class="chart-dot chart-tone-${status.tone}" aria-hidden="true"></i>${status.short}</span><strong>${run.original.records.filter(record => record.status === status.id).length}<i aria-hidden="true">→</i>${run.proposed.records.filter(record => record.status === status.id).length}</strong></div>`).join('')}</figcaption></figure>
-    <details class="chart-data-details"><summary>Inspect exact transfers ${icon('chevron')}</summary><dl>${data.transfers.map(transfer => `<div><dt>${labelFor(transfer.from)} → ${labelFor(transfer.to)}</dt><dd>${transfer.count} records</dd></div>`).join('')}</dl></details>
+    <details class="chart-data-details"><summary>Inspect exact transfers ${icon('chevron')}</summary><dl>${data.transfers.map(transfer => `<div><dt><button data-analysis-group="flow:${transfer.from}:${transfer.to}">${labelFor(transfer.from)} → ${labelFor(transfer.to)} ${icon('arrow')}</button></dt><dd>${transfer.count} records</dd></div>`).join('')}</dl></details>
     <p class="chart-note">${data.total} synthetic records in each scenario. Ribbon width represents people. Proposed matching remains separate from enrollment and evidence applicability.</p>
   </section>`;
 }
@@ -115,8 +116,10 @@ function renderReadinessChart(run) {
   return `<section class="insight-card readiness-chart" data-chart-enter data-chart="readiness" data-chart-run="${e(run.id)}">${chartHeading('PARTICIPATION READINESS', 'Support is a separate decision.', `All ${data.total} records`)}<div class="readiness-bars">${data.readiness.map((item, index) => `<div><span><i class="chart-dot chart-category-${index + 1}" aria-hidden="true"></i>${labels[item.id]}</span><div class="readiness-track" aria-hidden="true"><i class="chart-category-${index + 1}" style="--share:${percent(item.count, data.total)}%"></i></div><strong>${item.count}</strong></div>`).join('')}</div><p class="chart-note">Includes medically excluded records. Support, consent and method review do not change the medical outcome.</p></section>`;
 }
 
-export function renderTrialCharts(run, state) {
-  return `<div class="trial-chart-grid">${run.proposed.available !== false ? renderFlowChart(run) : renderOutcomeChart(run, state)}${renderCriterionChart(run)}</div>${renderReadinessChart(run)}`;
+export function renderTrialCharts(run, state, view = 'eligibility', dimension = 'age') {
+  const navigation = `<nav class="analysis-tabs" aria-label="Trial analytical views">${[['eligibility','Eligibility & barriers'],['composition','Population composition'],['matrix','Patient × criterion']].map(([id,label])=>`<button data-analysis-view="${id}" aria-pressed="${view===id}">${label}</button>`).join('')}</nav>`;
+  const content = view === 'composition' ? renderCompositionComparison(run,dimension) : view === 'matrix' ? renderEvidenceMatrix(run,state) : `<div class="trial-chart-grid">${run.proposed.available !== false ? renderFlowChart(run) : `<div><div class="scenario-unconfigured"><strong>Scenario not configured</strong><span>Current-protocol outcomes only; proposed criteria need configuration.</span></div>${renderOutcomeChart(run,state)}</div>`}${renderExclusionChart(run)}</div>`;
+  return `${navigation}${content}${['ACCESS','COGNITIVE'].includes(run.casePack?.id) ? `<details class="analysis-secondary"><summary>Participation readiness · separate from medical matching</summary>${renderReadinessChart(run)}</details>` : ''}`;
 }
 
 export function renderPatientGate(record) {

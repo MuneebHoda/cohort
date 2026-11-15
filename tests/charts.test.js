@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createWorkspace, datasetDefinitions } from '../src/workspace.js';
-import { buildChartData, renderTrialCharts, renderPatientGate, renderPatientCharts } from '../src/charts.js';
+import { buildChartData, renderTrialCharts, renderPatientGate, renderPatientCharts, renderCriterionChart } from '../src/charts.js';
 
 test('scenario ribbons reconcile exact reference transfers independently of the active scenario', () => {
   const workspace = createWorkspace({ dataset: 'casebook' });
@@ -57,7 +57,7 @@ test('a criterion absent from another authored protocol snapshot is never drawn 
   assert.equal(concern.PASS + concern.FAIL + concern.UNKNOWN, scopedRecords);
   assert.equal(concern.NOT_IN_PROTOCOL, 50 - scopedRecords);
   assert.equal(concern.PASS, 0);
-  assert.match(renderTrialCharts(workspace.run, workspace.state), /Not in snapshot/);
+  assert.match(renderCriterionChart(workspace.run), /Not in snapshot/);
 });
 
 test('unconfigured case proposals have no ribbons or fabricated zero-match comparison', () => {
@@ -100,7 +100,7 @@ test('empty and hostile display data remain safe, with no invalid chart geometry
   assert.doesNotMatch(renderTrialCharts(run, workspace.state), /NaN|Infinity/);
   const hostile = structuredClone(workspace.run);
   hostile.current.records[0].evaluations[0].title = '<img src=x onerror=alert(1)>';
-  const html = renderTrialCharts(hostile, workspace.state);
+  const html = renderTrialCharts(hostile, workspace.state) + renderCriterionChart(hostile) + renderTrialCharts(hostile, workspace.state, 'matrix');
   assert.doesNotMatch(html, /<img/); assert.match(html, /&lt;img/);
 });
 

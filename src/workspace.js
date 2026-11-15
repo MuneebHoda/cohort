@@ -6,9 +6,13 @@ import { calculateComposition, calculateMissingness, demographicGroup } from './
 import { evaluateCohort, evaluatePatient } from './cohort.js';
 import { getReviewProfile, rankCandidates } from './ranking.js';
 import { reviewConfig } from './review-fixture.js';
-import { sources, study } from './data.js';
-import { casePackDefinitions, generateCasePack, investigationSettings, investigationSources, routeDefinitions } from './case-packs.js';
+import { study } from './data.js';
+import { casePackDefinitions, generateCasePack, investigationSettings, routeDefinitions } from './case-packs.js';
 import { evaluateInvestigationPack } from './investigation.js';
+import { attachDecisionBriefs } from './decision-brief.js';
+import { getGuidanceRows, guidanceReviewKey } from './guidance-review.js';
+import { guidanceReviewStatuses } from './guidance-sources.js';
+import { buildAnalysisGroups } from './analysis-model.js';
 
 const booleanFields = ['strong_cyp3a_inhibitor', 'clinically_unstable_cardiac_disease', 'controlled_hypertension', 'stable_type2_diabetes', 'stable_cardiac_history', 'renal_stable'];
 const ageDefinitions = [['under65', 'Under 65', age => age < 65], ['65to74', '65–74', age => age >= 65 && age < 75], ['75plus', '75+', age => age >= 75], ['unknown', 'Age not recorded', () => false]];
@@ -49,12 +53,13 @@ function groups(patients, original, proposed, definitions) {
   });
 }
 
+function finishRun(run) { attachDecisionBriefs(run); run.chartGroups = buildAnalysisGroups(run); return freeze(run); }
 function makeRun(id, datasetVersion, scenarioId, patients, dataset) {
   const records = clone(patients);
   if (dataset.casePackId) {
     const result = evaluateInvestigationPack(records, dataset.casePackId, scenarioId);
     const ageGroups = groups(records, result.original, result.proposed, ageDefinitions.map(([key, label]) => [key, label, record => ageFor(record) === key]));
-    return freeze({ id, createdAt: new Date().toISOString(), studyId: result.casePack.studyId, datasetVersion, dataset, scenarioId, patients: records, ...result, ageGroups,
+    return finishRun({ id, createdAt: new Date().toISOString(), studyId: result.casePack.studyId, datasetVersion, dataset, scenarioId, patients: records, ...result, ageGroups,
       subgroups: result.investigationSummary.routes.map(route => ({ id: route.id, label: route.label, screened: route.count, original: result.original.records.filter(r => route.ids.includes(r.id) && r.status === 'eligible').length, proposed: result.proposed.records.filter(r => route.ids.includes(r.id) && r.status === 'eligible').length, ids: route.ids })),
       demographics: calculateComposition(records, result.original, result.proposed), missingness: [],
     });
@@ -73,7 +78,7 @@ function makeRun(id, datasetVersion, scenarioId, patients, dataset) {
     ['cardiac-history', 'Stable cardiac history', record => record.stable_cardiac_history === true && !conflict(record, 'stable_cardiac_history')],
     ['unknown-renal', 'Renal assessment unresolved', record => !knownRenal(record)],
   ]);
-  return freeze({ id, createdAt: new Date().toISOString(), studyId: study.id, datasetVersion, dataset, scenarioId, patients: records, original, proposed, current,
+  return finishRun({ id, createdAt: new Date().toISOString(), studyId: study.id, datasetVersion, dataset, scenarioId, patients: records, original, proposed, current,
     ranked: rankCandidates(current), profiles: Object.fromEntries(current.records.map(record => [record.id, getReviewProfile(record)])), ageGroups, subgroups,
     demographics: calculateComposition(records, original, proposed), missingness: calculateMissingness(records),
     configVersions: { protocol: clinicalConfig.protocol.version, scenarios: Object.fromEntries(clinicalConfig.scenarios.map(scenario => [scenario.id, scenario.version])), rules: Object.fromEntries(clinicalConfig.rules.map(rule => [rule.id, rule.version])), evidence: Object.fromEntries(clinicalConfig.evidence.map(source => [source.id, source.version || source.date || 'unversioned'])), scoring: reviewConfig.version, generator: dataset.id === 'expanded' ? showcaseConfig.version : null, adapter: dataset.id === 'casebook' ? 'anchor-renal-stability-assumption-v1' : 'authored-synthetic-profiles' },
@@ -83,7 +88,7 @@ function makeRun(id, datasetVersion, scenarioId, patients, dataset) {
 export function visibleRecords(run, filters = {}) {
   const { status = 'all', age = 'all', subgroup = 'all', query = '', demographic = 'all' } = filters;
   const [demographicField, demographicValue] = demographic.split(':');
-  const subgroupIds = subgroup === 'all' ? null : new Set(run.subgroups.find(group => group.id === subgroup)?.ids || []);
+  const subgroupIds = subgroup === 'all' ? null : new Set([...run.subgroups,...run.chartGroups].find(group => group.id === subgroup)?.ids || []);
   const ordered = [...run.current.records].sort((a, b) => String(a.id).localeCompare(String(b.id), 'en', { numeric: true }) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   const rankedIds = new Set(run.ranked.map(record => record.id));
   const records = status === 'new' ? [...run.ranked, ...ordered.filter(record => record.newlyEligible && !rankedIds.has(record.id))] : ordered;
@@ -161,6 +166,7 @@ export function createWorkspace({ dataset = 'expanded' } = {}) {
     run = makeRun(`RUN-${String(runs.length + 1).padStart(3, '0')}`, state.datasetVersion, state.scenarioId, [...baseFor(state.dataset), ...additions[state.dataset]], datasetDefinitions[state.dataset]);
     runs = freeze([...runs, run]);
     const cleared = [];
+    if (state.filters.subgroup !== 'all' && ![...run.subgroups,...run.chartGroups].some(group => group.id === state.filters.subgroup)) { update({filters:{...state.filters,subgroup:'all'}}); cleared.push('analysis drill-down'); }
     if (type === 'dataset-changed') {
       const filters = { ...state.filters };
       if (filters.query && !run.patients.some(record => record.id.toLowerCase().includes(filters.query.toLowerCase()))) { filters.query = ''; cleared.push('patient-ID search'); }
@@ -181,7 +187,8 @@ export function createWorkspace({ dataset = 'expanded' } = {}) {
       const prior = previous.current.records.find(item => item.id === record.id);
       return !prior || prior.status !== record.status || prior.evaluations.some((evaluation, index) => evaluation.result !== record.evaluations[index]?.result);
     }).map(record => record.id).concat(previous.current.records.filter(record => !run.patients.some(item => item.id === record.id)).map(record => record.id)) : run.patients.map(record => record.id);
-    log(type, `${reason}${cleared.length ? ` Cleared incompatible ${cleared.join(' and ')}.` : ''}${type === 'dataset-changed' ? selected ? ` Selected ${selected}.` : ' No patient selected: no records match the retained filters.' : ''}`, [...new Set(affectedIds)], extra);
+    const context = snapshot => snapshot ? {runId:snapshot.id,studyId:snapshot.studyId,datasetVersion:snapshot.datasetVersion,scenarioId:snapshot.scenarioId,meets:snapshot.current.eligible,excluded:snapshot.current.excluded,indeterminate:snapshot.current.indeterminate} : null;
+    log(type, `${reason}${cleared.length ? ` Cleared incompatible ${cleared.join(' and ')}.` : ''}${type === 'dataset-changed' ? selected ? ` Selected ${selected}.` : ' No patient selected: no records match the retained filters.' : ''}`, [...new Set(affectedIds)], {before:context(previous),after:context(run),...extra});
   }
   analyze('initialized', `Opened ${datasetDefinitions[dataset].label} with original protocol rules.`);
   return {
@@ -192,7 +199,7 @@ export function createWorkspace({ dataset = 'expanded' } = {}) {
     setFilters(partial) {
       const filters = { ...state.filters };
       for (const key of Object.keys(filters)) if (Object.hasOwn(partial, key)) filters[key] = String(partial[key] ?? '');
-      if (!['all', 'new', 'changed', 'eligible', 'excluded', 'indeterminate'].includes(filters.status) || !['all', ...ageDefinitions.map(([id]) => id)].includes(filters.age) || !['all', ...run.subgroups.map(group => group.id)].includes(filters.subgroup)) throw new TypeError('Unknown cohort filter.');
+      if (!['all', 'new', 'changed', 'eligible', 'excluded', 'indeterminate'].includes(filters.status) || !['all', ...ageDefinitions.map(([id]) => id)].includes(filters.age) || !['all', ...run.subgroups.map(group => group.id), ...run.chartGroups.map(group => group.id)].includes(filters.subgroup)) throw new TypeError('Unknown cohort filter.');
       if (filters.demographic !== 'all' && !run.demographics.some(dimension => dimension.groups.some(group => `${dimension.id}:${group.id}` === filters.demographic))) throw new TypeError('Unknown demographic filter.');
       if (Object.keys(filters).some(key => filters[key] !== state.filters[key])) { update({ filters, queuePage: 0, selectedPatientId: state.selectedPatientId || visibleRecords(run, filters)[0]?.id || null }); notify(); }
     },
@@ -213,7 +220,7 @@ export function createWorkspace({ dataset = 'expanded' } = {}) {
       analyze('dataset-changed', `Opened ${datasetDefinitions[value].label}.`); notify();
     },
     setDetailTab(tab) { if (!['overview', 'criteria', 'evidence', 'pathway'].includes(tab)) throw new TypeError('Unknown patient detail tab.'); if (tab !== state.detailTab) { update({ detailTab: tab }); notify(); } },
-    setEvidence(idOrNull) { if (idOrNull !== null && ![...sources, ...investigationSources].some(source => source.id === idOrNull)) throw new TypeError('Unknown evidence ID.'); if (idOrNull !== state.selectedEvidenceId) { update({ selectedEvidenceId: idOrNull }); notify(); } },
+    setEvidence(idOrNull) { if (idOrNull !== null && !run.evidenceRegistry.some(source => source.id === idOrNull)) throw new TypeError('Unknown evidence ID.'); if (idOrNull !== state.selectedEvidenceId) { update({ selectedEvidenceId: idOrNull }); notify(); } },
     addProfile(draft) {
       if (run.casePack) throw new TypeError('Profile authoring is not configured for this case pack.');
       const result = validateProfile(draft, run.patients);
@@ -227,8 +234,21 @@ export function createWorkspace({ dataset = 'expanded' } = {}) {
       if (!run.patients.some(record => record.id === patientId)) throw new TypeError('Unknown patient ID.');
       if (![...reviewActions.map(([id]) => id), ...(run.casePack ? routeDefinitions.map(([id])=>id) : []), 'reviewed', 'further-review'].includes(disposition)) throw new TypeError('Unknown review disposition.');
       if (typeof reason !== 'string' || !reason.trim()) throw new TypeError('A review rationale is required.');
-      const event = log('disposition-recorded', reason.trim(), [patientId], { patientId, disposition });
+      const prior = state.reviewDispositions[`${state.dataset}/${run.id}/${patientId}`] || null;
+      const activeMedicalStatus = run.current.records.find(record => record.id === patientId).status;
+      const event = log('disposition-recorded', reason.trim(), [patientId], { patientId, disposition, before: {disposition:prior?.disposition||null,activeMedicalStatus}, after: { disposition, reason: reason.trim(), activeMedicalStatus } });
       update({ reviewDispositions: { ...state.reviewDispositions, [`${state.dataset}/${run.id}/${patientId}`]: { runId: run.id, eventId: event.id, disposition, reason: event.reason, timestamp: event.timestamp } } });
+      notify(); return event;
+    },
+    recordGuidanceReview({ patientId, topicId, status, rationale, evidenceNotes }) {
+      const row = getGuidanceRows(run, state, patientId).find(item => item.id === topicId);
+      if (!row || !guidanceReviewStatuses.some(([id]) => id === status)) throw new TypeError('Unknown patient, guidance topic or review status.');
+      if (![rationale, evidenceNotes].every(value => typeof value === 'string' && value.trim() && value.length <= 1200)) throw new TypeError('A rationale and the evidence or information actually considered are required (up to 1200 characters each).');
+      const key = guidanceReviewKey(run, patientId, topicId);
+      const activeMedicalStatus = run.current.records.find(record=>record.id===patientId).status;
+      const after = { status, rationale: rationale.trim(), evidenceNotes: evidenceNotes.trim(), documentationStatus: row.documentationStatus, activeMedicalStatus };
+      const event = log('guidance-review-recorded', after.rationale, [patientId], { patientId, topicId, before: {...(row.actualReview || { status: row.reviewStatus, documentationStatus: row.documentationStatus }),activeMedicalStatus}, after });
+      update({ guidanceReviews: { ...state.guidanceReviews, [key]: { ...after, actor: event.actor, authenticated: false, timestamp: event.timestamp, eventId: event.id, runId: run.id } } });
       notify(); return event;
     },
     reset() {
