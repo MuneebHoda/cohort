@@ -12,6 +12,10 @@ import { renderPatientQueue, renderPatientDetail, renderProfileForm } from './st
 import { createConstellation } from './constellation.js';
 import { renderContext, renderSceneStory, renderTrialSummary, renderTrialAnalytics, renderDecision, renderReport, buildReviewPacket } from './studio-views.js';
 import { renderStudyTool } from './study-tools.js';
+import { mountPresentation, waitForPresentationView } from './presentation.js';
+import { anchorPatients } from './patients.js';
+import { resolveScenario } from './cohort.js';
+import { getGuidanceRows } from './guidance-review.js';
 import { escape as e, icon } from './ui.js';
 
 export function mountStudio() {
@@ -30,6 +34,8 @@ export function mountStudio() {
   let analysisView = 'eligibility';
   let analysisDimension = 'age';
   let traceCriterion = 'RENAL';
+  let evidenceView = null;
+  let presentationNavigation = false;
   let profileDraft = {};
   let draftEvaluation = null;
   let profileTimer;
@@ -47,7 +53,7 @@ export function mountStudio() {
   document.body.classList.add('studio-body');
   document.title = 'Cohort — Live Trial Review Studio';
   document.querySelector('meta[name="theme-color"]').content = getComputedStyle(document.documentElement).getPropertyValue('--app-background').trim();
-  app.innerHTML = `<header class="studio-header"><a class="studio-brand" href="#patient" aria-label="Cohort patient review"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="16" cy="15" r="8"/><circle cx="25" cy="15" r="8"/><circle cx="20.5" cy="23" r="8"/></svg><span>${e(product.wordmark)}</span></a><div class="studio-study" id="active-study"><span>CLINICAL DEVELOPMENT / ${e(study.phase).toUpperCase()}</span><h1>${e(study.drug)} <span>${e(study.title.replace(study.drug, '').trim())}</span></h1></div><span class="synthetic-pill">${icon('flask')} Synthetic demonstration</span><div class="studio-header-actions"><button id="patients-toggle" class="studio-button patients-toggle" data-action="open-queue" aria-haspopup="dialog" aria-controls="patient-queue-dialog">${icon('people')}<span>Patients</span><strong></strong></button><button class="studio-icon-button" data-action="guide" aria-label="Open demonstration guide" title="Demonstration guide">${icon('book')}</button><button class="studio-reset" data-action="reset">${icon('reset')}<span>Reset dataset</span></button></div></header>
+  app.innerHTML = `<header class="studio-header"><a class="studio-brand" href="#patient" aria-label="Cohort patient review"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="16" cy="15" r="8"/><circle cx="25" cy="15" r="8"/><circle cx="20.5" cy="23" r="8"/></svg><span>${e(product.wordmark)}</span></a><div class="studio-study" id="active-study"><span>CLINICAL DEVELOPMENT / ${e(study.phase).toUpperCase()}</span><h1>${e(study.drug)} <span>${e(study.title.replace(study.drug, '').trim())}</span></h1></div><span class="synthetic-pill">${icon('flask')} Synthetic demonstration</span><div class="studio-header-actions"><button id="presentation-launch" class="studio-button presentation-launch" aria-haspopup="dialog" aria-expanded="false">${icon('play')}<span>Presentation</span></button><button id="patients-toggle" class="studio-button patients-toggle" data-action="open-queue" aria-haspopup="dialog" aria-controls="patient-queue-dialog">${icon('people')}<span>Patients</span><strong></strong></button><button class="studio-icon-button" data-action="guide" aria-label="Open demonstration guide" title="Demonstration guide">${icon('book')}</button><button class="studio-reset" data-action="reset">${icon('reset')}<span>Reset dataset</span></button></div></header>
     <div class="studio-navigation"><nav aria-label="Workspace perspectives" id="perspective-tabs"></nav><div id="scenario-controls"></div><details class="study-tools-menu"><summary>${icon('file')}<span>Study tools</span>${icon('chevron')}</summary><div><button data-tool="protocol">Study protocol</button><button data-tool="criteria">Criterion review desk</button><button data-tool="population">Boundary explorer</button><button data-action="report">Current review packet</button><button data-action="guide">Demonstration guide</button></div></details></div>
     <div id="workspace-context" class="workspace-context"></div>
     <main id="main" tabindex="-1" class="studio-main"><section id="patient-perspective" aria-label="Patient Review"><button class="mobile-population-jump studio-button" data-action="population-jump">Explore population ↘</button><div class="patient-studio-layout"><div class="population-stage-column"><div id="patient-scene-slot"></div><div id="cohort-charts" aria-label="Cohort visual insights"></div><section id="scene-story" class="scene-story"></section><div class="stage-reading-note">${icon('shield')} Explicit rules. Traceable evidence. Expert review required.</div></div><div class="patient-detail-region"><button class="mobile-back" data-action="back-to-queue">← Back to patient queue</button><div id="patient-detail"></div></div></div></section>
@@ -56,6 +62,7 @@ export function mountStudio() {
     <footer class="studio-footer"><span>FICTIONAL STUDY · SYNTHETIC RECORDS · LOCAL CALCULATIONS</span><span>The index is unvalidated. Modeled matching is not enrollment approval.</span></footer>`;
   queueDialog.innerHTML = `<header class="queue-drawer-header"><div><span class="studio-eyebrow">SYNTHETIC RECORDS</span><h2 id="queue-title">Patient explorer</h2></div><button class="studio-icon-button" data-action="close-queue" aria-label="Close patient explorer">${icon('close')}</button></header><div id="patient-queue" class="patient-queue-region"></div>`;
   const sceneHost = document.createElement('div');
+  sceneHost.id = 'population-visual';
   sceneHost.className = 'constellation-host';
   document.querySelector('#patient-scene-slot').append(sceneHost);
   const scene = createConstellation(sceneHost, { onSelect: id => selectPatient(id, 'scene') });
@@ -133,7 +140,6 @@ export function mountStudio() {
     patch('patient-detail', `<div class="patient-stepper"><span>${selectedIndex < 0 ? 'Selected record is outside current filters' : `${selectedIndex + 1} of ${visible.length} shown`}</span><div><button data-action="previous-patient" aria-label="Previous visible patient" ${selectedIndex <= 0 ? 'disabled' : ''}>←</button><button data-action="next-patient" aria-label="Next visible patient" ${selectedIndex < 0 || selectedIndex >= visible.length - 1 ? 'disabled' : ''}>→</button></div></div>${renderPatientDetail({ state, run, sources, config: clinicalConfig, escape: e, icon })}`, patientChanged || runChanged);
     if (patientChanged || previousDetailTab !== state.detailTab) document.querySelector('#patient-detail-content')?.scrollTo({ top: 0, behavior: 'instant' });
     patch('cohort-charts', renderPatientCharts(run, state), runChanged ? 'charts' : false);
-    if (run.casePack && analysisDimension === 'clinical') analysisDimension = 'age';
     patch('trial-charts', renderTrialCharts(run, state, analysisView, analysisDimension), runChanged ? 'charts' : false);
     patch('scene-story', renderSceneStory(run), runChanged);
     patch('trial-summary', renderTrialSummary(run), runChanged);
@@ -155,7 +161,7 @@ export function mountStudio() {
     if (sceneHost.parentElement !== destination) destination.append(sceneHost);
     scene.setVisible(state.perspective !== 'decision' && (state.perspective !== 'trial' || document.getElementById('trial-context-details').open) && !(mobileDetailOpen && matchMedia('(max-width: 900px)').matches));
     scene.update({ run, selectedPatientId: state.selectedPatientId, visibleIds: visibleRecords(run, state.filters).map(r => r.id), reducedMotion: motion.matches });
-    if (patientChanged && state.perspective === 'patient' && !mobileDetailOpen) requestAnimationFrame(() => {
+    if (patientChanged && state.perspective === 'patient' && !mobileDetailOpen && !presentationNavigation) requestAnimationFrame(() => {
       if (workspace.state.selectedPatientId !== state.selectedPatientId) return;
       const queue = document.querySelector('.sp-queue-scroll');
       const row = [...document.querySelectorAll('[data-patient-row]')].find(item => item.dataset.patientRow === state.selectedPatientId);
@@ -184,7 +190,7 @@ export function mountStudio() {
     workspace.selectPatient(id);
     // The same selected patient can still open the compact-screen detail.
     if (unchanged) render();
-    if (fromQueue || mobileDetailOpen && workspace.state.perspective === 'patient') requestAnimationFrame(() => {
+    if (origin!=='presentation' && (fromQueue || mobileDetailOpen && workspace.state.perspective === 'patient')) requestAnimationFrame(() => {
       document.querySelector('#selected-patient-heading')?.focus({ preventScroll: true });
       if (mobileDetailOpen) document.querySelector('.patient-detail-region')?.scrollIntoView({ block: 'start', behavior: 'instant' });
     });
@@ -214,18 +220,18 @@ export function mountStudio() {
     if (changed) transitionPanel(document.getElementById(`${perspective}-perspective`));
   }
 
-  function changeDataset(id) {
+  function changeDataset(id, activity = {}) {
     if (id === workspace.state.dataset) return;
     closeQueue(false);
     mobileDetailOpen = false;
-    workspace.setDataset(id);
-    announce(`${workspace.run.casePack?.id || workspace.run.dataset.shortLabel} loaded · ${workspace.run.current.total} synthetic records · ${workspace.run.id}.`);
+    workspace.setDataset(id,activity);
+    if(activity.activity!=='presentation')announce(`${workspace.run.casePack?.id || workspace.run.dataset.shortLabel} loaded · ${workspace.run.current.total} synthetic records · ${workspace.run.id}.`);
   }
 
-  function changeScenario(id) {
+  function changeScenario(id, activity = {}) {
     const prior = workspace.run.id;
-    workspace.setScenario(id);
-    if (workspace.run.id !== prior) {
+    workspace.setScenario(id,activity);
+    if (workspace.run.id !== prior && activity.activity!=='presentation') {
       const { current } = workspace.run;
       announce(`${current.gate.active ? 'Proposed scenario active' : current.gate.requested ? 'Revision withheld; original rules retained' : 'Original protocol restored'}. ${current.eligible}/${current.total} meet modeled rules · ${current.excluded} excluded · ${current.indeterminate} indeterminate · ${current.newlyEligible} newly matching.`);
     }
@@ -251,6 +257,7 @@ export function mountStudio() {
   }
 
   function openEvidence(id, passageId = null) {
+    evidenceView = {kind:'source',id,passageId};
     if (guidanceSources.some(source => source.id === id)) { workspace.setEvidence(id); evidenceDialog.innerHTML = renderVerifiedSource(id,passageId,workspace.run.id); if (!evidenceDialog.open) evidenceDialog.showModal(); transitionPanel(evidenceDialog,'drawer'); return; }
     const caseSource = investigationSources.find(source=>source.id===id);
     if (caseSource) { workspace.setEvidence(id); evidenceDialog.innerHTML = renderCaseSource(caseSource,workspace.run.id); if (!evidenceDialog.open) evidenceDialog.showModal(); transitionPanel(evidenceDialog,'drawer'); return; }
@@ -260,7 +267,7 @@ export function mountStudio() {
     const registered = clinicalConfig.evidence.find(s => s.id === id);
     const official = source.type === 'Official guidance';
     const synthetic = source.type === 'Synthetic patient data';
-    evidenceDialog.innerHTML = `<div class="drawer-header"><span class="studio-eyebrow">EVIDENCE / ${official ? 'GUIDANCE CONTEXT' : synthetic ? 'DATASET PROVENANCE' : 'FICTIONAL DRUG EVIDENCE'}</span><button class="studio-icon-button" data-action="close-evidence" aria-label="Close evidence">${icon('close')}</button></div><div class="drawer-content"><span class="source-type ${official ? 'official' : ''}">${icon(official ? 'book' : 'flask')}${e(source.type)}</span><h2 id="evidence-title">${e(source.title)}</h2><dl class="source-provenance"><div><dt>Source ID</dt><dd>${e(id)}</dd></div><div><dt>Document date</dt><dd>${e(registered?.date || 'Not supplied')}</dd></div><div><dt>Document version</dt><dd>${e(registered?.version || 'Not supplied')}</dd></div><div><dt>Fixture container</dt><dd>SYN-217 case v${e(demoCase.case_version)} · ${e(workspace.run.id)}</dd></div><div><dt>Passage reference</dt><dd>${e(id)} / ${official ? 'source registry summary' : synthetic ? 'dataset notes' : 'fictional summary'}<small>No original document passage identifier supplied.</small></dd></div></dl><span class="studio-eyebrow passage-label">${official ? 'REGISTRY SUMMARY · PARAPHRASE, NOT A QUOTATION' : synthetic ? 'SYNTHETIC DATASET NOTES' : 'AUTHORED FICTIONAL SUMMARY'}</span><blockquote>${e(official ? registered?.use || registered?.summary || 'A source excerpt was not supplied.' : registered?.passage || registered?.summary || source.passage || 'A source excerpt was not supplied.')}</blockquote><section class="evidence-relationship"><h3>Relationship to this finding</h3><p>${e(source.relationship)}</p></section><div class="source-applicability"><strong>${official ? 'Context does not establish SYN-217 safety.' : synthetic ? 'Synthetic provenance, not a real patient cohort.' : 'Applicability requires qualified review.'}</strong><p>${official ? 'This prototype includes a registry description, not a verified verbatim excerpt. Check the original source and its current status before making regulatory claims.' : id.startsWith('SYN-PK') ? `The fictional renal packet covers a stable eGFR ${e(clinicalConfig.thresholds.renalProposedMin)}–<${e(clinicalConfig.thresholds.renalOriginalMin)} subgroup. ${workspace.state.dataset === 'casebook' ? 'The 20-record reference case has no longitudinal renal series; its stability flag is a synthetic adapter assumption.' : 'Generated and draft renal-stability flags are authored synthetic values. A single dated measurement does not establish longitudinal stability.'} No supplied evidence supports extension below ${e(clinicalConfig.thresholds.renalProposedMin)}.` : 'The supplied summary is fictional and cannot establish safety or enrollment approval for a real patient.'}</p></div>${source.note ? `<p class="source-note">${e(source.note)}</p>` : ''}${source.url ? `<a class="studio-button full" href="${e(source.url)}" target="_blank" rel="noopener noreferrer">Read official source ${icon('external')}</a>` : '<p class="fixture-disclosure">Prepared fictional content for this software demonstration.</p>'}</div><div class="drawer-footer">${icon('shield')} Evidence applicability and modeled rule matching are separate.</div>`;
+    evidenceDialog.innerHTML = `<div class="drawer-header"><span class="studio-eyebrow">EVIDENCE / ${official ? 'GUIDANCE CONTEXT' : synthetic ? 'DATASET PROVENANCE' : 'FICTIONAL DRUG EVIDENCE'}</span><button class="studio-icon-button" data-action="close-evidence" aria-label="Close evidence">${icon('close')}</button></div><div class="drawer-content"><span class="source-type ${official ? 'official' : ''}">${icon(official ? 'book' : 'flask')}${e(source.type)}</span><h2 id="evidence-title">${e(source.title)}</h2><dl class="source-provenance"><div><dt>Source ID</dt><dd>${e(id)}</dd></div><div><dt>Document date</dt><dd>${e(registered?.date || 'Not supplied')}</dd></div><div><dt>Document version</dt><dd>${e(registered?.version || 'Not supplied')}</dd></div><div><dt>Fixture container</dt><dd>SYN-217 case v${e(demoCase.case_version)} · ${e(workspace.run.id)}</dd></div><div><dt>Passage reference</dt><dd>${e(id)} / ${official ? 'source registry summary' : synthetic ? 'dataset notes' : 'fictional summary'}<small>No original document passage identifier supplied.</small></dd></div></dl><span class="studio-eyebrow passage-label">${official ? 'REGISTRY SUMMARY · PARAPHRASE, NOT A QUOTATION' : synthetic ? 'SYNTHETIC DATASET NOTES' : 'AUTHORED FICTIONAL SUMMARY'}</span><blockquote data-presentation-target="evidence-passage">${e(official ? registered?.use || registered?.summary || 'A source excerpt was not supplied.' : registered?.passage || registered?.summary || source.passage || 'A source excerpt was not supplied.')}</blockquote><section class="evidence-relationship"><h3>Relationship to this finding</h3><p>${e(source.relationship)}</p></section><div class="source-applicability"><strong>${official ? 'Context does not establish SYN-217 safety.' : synthetic ? 'Synthetic provenance, not a real patient cohort.' : 'Applicability requires qualified review.'}</strong><p>${official ? 'This prototype includes a registry description, not a verified verbatim excerpt. Check the original source and its current status before making regulatory claims.' : id.startsWith('SYN-PK') ? `The fictional renal packet covers a stable eGFR ${e(clinicalConfig.thresholds.renalProposedMin)}–<${e(clinicalConfig.thresholds.renalOriginalMin)} subgroup. ${workspace.state.dataset === 'casebook' ? 'The 20-record reference case has no longitudinal renal series; its stability flag is a synthetic adapter assumption.' : 'Generated and draft renal-stability flags are authored synthetic values. A single dated measurement does not establish longitudinal stability.'} No supplied evidence supports extension below ${e(clinicalConfig.thresholds.renalProposedMin)}.` : 'The supplied summary is fictional and cannot establish safety or enrollment approval for a real patient.'}</p></div>${source.note ? `<p class="source-note">${e(source.note)}</p>` : ''}${source.url ? `<a class="studio-button full" href="${e(source.url)}" target="_blank" rel="noopener noreferrer">Read official source ${icon('external')}</a>` : '<p class="fixture-disclosure">Prepared fictional content for this software demonstration.</p>'}</div><div class="drawer-footer">${icon('shield')} Evidence applicability and modeled rule matching are separate.</div>`;
     if (!evidenceDialog.open) evidenceDialog.showModal();
     transitionPanel(evidenceDialog, 'drawer');
   }
@@ -322,6 +329,19 @@ export function mountStudio() {
     toolDialog.showModal();
   }
 
+  function openGuidanceTopic(id) {
+    const row=document.querySelector(`#decision-content [data-guidance-topic="${id}"]`);
+    if(!row)throw new Error('The guidance topic is unavailable.');
+    row.open=true;row.scrollIntoView({block:'start',behavior:motion.matches?'instant':'smooth'});row.querySelector('summary').focus({preventScroll:true});
+  }
+
+  function inspectAnalysisGroup(id, quiet = false) {
+    workspace.setFilters({status:'all',age:'all',subgroup:id,query:'',demographic:'all'});
+    navigate('patient',!quiet);const records=visibleRecords(workspace.run,workspace.state.filters);if(records.length)workspace.selectPatient(records[0].id);
+    openQueue(document.querySelector('#patients-toggle'));
+    if(!quiet)announce(`Opened ${records.length} exact records from this analysis. Active scenario unchanged.`);
+  }
+
   document.addEventListener('click', event => {
     const button = event.target.closest('button, a.studio-brand, [data-analysis-group]');
     if (!button) {
@@ -334,11 +354,8 @@ export function mountStudio() {
       if (button.matches('a.studio-brand')) { event.preventDefault(); navigate('patient'); return; }
       if (button.dataset.analysisView) { analysisView = button.dataset.analysisView; render(); transitionPanel(document.getElementById('trial-charts')); return; }
       if (button.dataset.analysisDimension) { analysisDimension = button.dataset.analysisDimension; render(); transitionPanel(document.getElementById('trial-charts')); return; }
-      if (button.dataset.analysisGroup) {
-        workspace.setFilters({status:'all',age:'all',subgroup:button.dataset.analysisGroup,query:'',demographic:'all'});
-        navigate('patient'); const records=visibleRecords(workspace.run,workspace.state.filters); if (records.length) workspace.selectPatient(records[0].id);
-        openQueue(document.querySelector('#patients-toggle')); announce(`Opened ${records.length} exact records from this analysis. Active scenario unchanged.`); return;
-      }
+      if (button.dataset.guidanceOpen) { openGuidanceTopic(button.dataset.guidanceOpen); return; }
+      if (button.dataset.analysisGroup) { inspectAnalysisGroup(button.dataset.analysisGroup); return; }
       if (button.dataset.source) { openEvidence(button.dataset.source, button.dataset.passage); return; }
       if (button.dataset.perspective) { if (toolDialog.open) toolDialog.close(); navigate(button.dataset.perspective); return; }
       if (button.dataset.scenario) { changeScenario(button.dataset.scenario); return; }
@@ -359,6 +376,7 @@ export function mountStudio() {
       if (button.dataset.detailTab) { workspace.setDetailTab(button.dataset.detailTab); return; }
       if (button.dataset.inspectCriterion) {
         const patientId = button.dataset.criterionPatient || workspace.state.selectedPatientId;
+        evidenceView={kind:'criterion',patientId,criterionId:button.dataset.inspectCriterion,phase:button.dataset.criterionPhase};
         workspace.selectPatient(patientId); workspace.setEvidence(null);
         evidenceDialog.innerHTML = renderCriterionInspection(workspace.run,patientId,button.dataset.inspectCriterion,button.dataset.criterionPhase);
         if (!evidenceDialog.open) evidenceDialog.showModal(); transitionPanel(evidenceDialog,'drawer'); return;
@@ -518,7 +536,7 @@ export function mountStudio() {
   queueDialog.addEventListener('click', event => { if (event.target === queueDialog) closeQueue(); });
   queueDialog.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); closeQueue(); } });
   queueDialog.addEventListener('close', () => { if (queueRestoreFocus) document.getElementById(queueOpenerId)?.focus({ preventScroll: true }); });
-  evidenceDialog.addEventListener('close', () => workspace.setEvidence(null));
+  evidenceDialog.addEventListener('close', () => { if(!evidenceDialog.open){evidenceView=null;workspace.setEvidence(null);} });
   profileDialog.addEventListener('close', () => clearTimeout(profileTimer));
   motion.addEventListener('change', () => {
     if (motion.matches) for (const id of ['cohort-charts', 'trial-charts']) transitionCharts(document.getElementById(id));
@@ -537,8 +555,159 @@ export function mountStudio() {
   window.addEventListener('hashchange', route);
   window.addEventListener('beforeprint', () => { document.getElementById('print-root').innerHTML = renderReport(workspace); });
   document.getElementById('trial-context-details').addEventListener('toggle', render);
+  let presentationOwnedGroup=null,documentedTopic=null,unresolvedTopic=null;
+  const presentationTargets={
+    population:['#population-visual .constellation','patient-perspective'],
+    'original-reason':['#patient-detail [data-brief-section="original"] .brief-rule','patient-detail'],
+    'evidence-passage':['#evidence-dialog [data-presentation-target="evidence-passage"]','evidence-dialog'],
+    'patient-conclusion':['#patient-detail .brief-lead','patient-detail'],
+    'attention-breakdown':['#patient-detail [data-presentation-target="attention-breakdown"]','patient-detail'],
+    'medication-rule':['#patient-detail #criterion-DDI','patient-detail'],
+    'remaining-limits':['#patient-detail [data-brief-section="limits"]','patient-detail'],
+    'eligibility-flow':['#trial-charts [data-chart="flow"] figure','trial-charts'],
+    'age-composition':['#trial-charts [data-composition-group="75plus"]','trial-charts'],
+    'patient-records':['#patient-queue .sp-queue-scroll','patient-queue'],
+    'guidance-matrix':['#decision-content .guidance-matrix','decision-content'],
+    'guidance-documented':[()=>`#decision-content [data-guidance-topic="${documentedTopic}"]`,'decision-content'],
+    'guidance-unresolved':[()=>`#decision-content [data-guidance-topic="${unresolvedTopic}"]`,'decision-content'],
+    'decision-trace':['#decision-content .trace-inspector','decision-content'],
+    'report-summary':['#tool-dialog [data-presentation-target="report-summary"]','tool-dialog'],
+  };
+  const resolvePresentationTarget=id=>{const selector=presentationTargets[id]?.[0];return selector?document.querySelector(typeof selector==='function'?selector():selector):null;};
+  function presentationGuidanceTopic(run,state,documented){
+    const rows=getGuidanceRows(run,state,state.selectedPatientId);
+    return documented?rows.find(row=>row.documentationStatus==='Evidence linked'):rows.find(row=>row.documentationStatus==='Documentation missing'||row.reviewStatus==='applicability_unresolved');
+  }
+  function closePresentationViews(){
+    closeQueue(false);
+    if(profileDialog.open)captureDraft();
+    for(const dialog of [evidenceDialog,toolDialog,profileDialog])if(dialog.open)dialog.close();
+    document.querySelector('.study-tools-menu').open=false;
+    document.querySelector('.scenario-advanced')?.removeAttribute('open');
+  }
+  async function focusPresentationTarget(id,signal){
+    const runId=workspace.run.id,patientId=workspace.state.selectedPatientId;
+    let target;
+    await waitForPresentationView(()=>{
+      target=resolvePresentationTarget(id);
+      return workspace.run.id===runId&&workspace.state.selectedPatientId===patientId&&app.dataset.runId===runId&&target?.getClientRects().length&&!scene.transitioning&&![...target.getAnimations({subtree:true})].some(animation=>animation.playState==='running');
+    },signal,`“${id}” is unavailable or did not finish loading. Retry this scene or exit.`);
+    signal.throwIfAborted();
+    if(!target.isConnected||resolvePresentationTarget(id)!==target)throw new Error(`“${id}” became unavailable. Retry this scene or exit.`);
+    const scrollTarget=id==='eligibility-flow'?target.closest('[data-chart="flow"]'):target;
+    const scrollParents=[];for(let parent=scrollTarget.parentElement;parent;parent=parent.parentElement)if(parent.scrollHeight>parent.clientHeight||parent.scrollWidth>parent.clientWidth)scrollParents.push(parent);
+    const stopScrolling=()=>{for(const parent of scrollParents)parent.scrollTo({top:parent.scrollTop,left:parent.scrollLeft,behavior:'instant'});};
+    signal.addEventListener('abort',stopScrolling,{once:true});
+    try{
+      scrollTarget.scrollIntoView({block:scrollTarget.getBoundingClientRect().height>innerHeight*.55?'start':'center',inline:'nearest',behavior:motion.matches?'instant':'smooth'});
+      let previous=null,stable=0;
+      await waitForPresentationView(()=>{if(!target.isConnected||resolvePresentationTarget(id)!==target||app.dataset.runId!==runId)return false;const rect=target.getBoundingClientRect();const position=`${Math.round(rect.top)},${Math.round(rect.left)}`;stable=position===previous?stable+1:0;previous=position;return stable>=4;},signal,`“${id}” is unavailable or could not finish positioning. Retry this scene or exit.`);
+    }finally{signal.removeEventListener('abort',stopScrolling);}
+    signal.throwIfAborted();
+    const focus=target.matches('button,input,select,textarea')?target.closest('section')||target.parentElement:target;
+    if(!focus.hasAttribute('tabindex'))focus.setAttribute('tabindex','-1');focus.focus({preventScroll:true});
+  }
+  function capturePresentationView(){
+    const state=workspace.state;
+    return {dataset:state.dataset,scenario:state.scenarioId,patientId:state.selectedPatientId,perspective:state.perspective,filters:{...state.filters},detailTab:state.detailTab,queuePage:state.queuePage,compositionDimension:state.compositionDimension,
+      analysisView,analysisDimension,traceStep,traceCriterion,toolCriterion,toolState:{...toolState},population:scene.getViewState(),mobileDetailOpen,mobileReturnToStage,hash:location.hash,
+      evidence:evidenceDialog.open?structuredClone(evidenceView):null,tool:toolDialog.open?tool:null,queue:queueDialog.open,profile:profileDialog.open,
+      scrolls:['#main','#patient-detail-content','#patient-queue .sp-queue-scroll'].map(selector=>({selector,top:document.querySelector(selector)?.scrollTop||0,left:document.querySelector(selector)?.scrollLeft||0})),
+      briefOpen:[...document.querySelectorAll('#patient-detail [data-brief-section][open]')].map(node=>node.dataset.briefSection),
+    };
+  }
+  async function restorePresentationView(view,context){
+    if(!view)return;presentationNavigation=true;
+    try{
+      closePresentationViews();changeDataset(view.dataset,context.activity);changeScenario(view.scenario,context.activity);
+      try{workspace.setFilters(view.filters);}catch{workspace.setFilters({status:'all',age:'all',subgroup:'all',query:'',demographic:'all'});}
+      if(workspace.run.patients.some(record=>record.id===view.patientId))workspace.selectPatient(view.patientId);
+      workspace.setDetailTab(view.detailTab);workspace.setCompositionDimension(view.compositionDimension);
+      analysisView=view.analysisView;analysisDimension=view.analysisDimension;traceStep=view.traceStep;traceCriterion=view.traceCriterion;toolCriterion=view.toolCriterion;Object.assign(toolState,view.toolState);
+      navigate(view.perspective,false);mobileDetailOpen=view.mobileDetailOpen;mobileReturnToStage=view.mobileReturnToStage;render();scene.restoreViewState(view.population);
+      workspace.setQueuePage(Math.min(view.queuePage,Math.max(0,Math.ceil(visibleRecords(workspace.run,workspace.state.filters).length/queuePageSize)-1)));
+      for(const id of view.briefOpen)document.querySelector(`#patient-detail [data-brief-section="${id}"]`)?.setAttribute('open','');
+      if(view.tool)showTool(view.tool);
+      if(view.evidence?.kind==='source'&&workspace.run.evidenceRegistry.some(source=>source.id===view.evidence.id))openEvidence(view.evidence.id,view.evidence.passageId);
+      if(view.evidence?.kind==='criterion'&&workspace.run.explanations[view.evidence.patientId]){
+        evidenceView=view.evidence;evidenceDialog.innerHTML=renderCriterionInspection(workspace.run,view.evidence.patientId,view.evidence.criterionId,view.evidence.phase);evidenceDialog.showModal();
+      }
+      if(view.queue)openQueue(document.querySelector('#patients-toggle'));if(view.profile)showProfile();
+      history.replaceState({},'',view.hash||location.pathname);
+      await new Promise(requestAnimationFrame);
+      for(const scroll of view.scrolls)document.querySelector(scroll.selector)?.scrollTo({top:scroll.top,left:scroll.left,behavior:'instant'});
+    }finally{presentationNavigation=false;}
+  }
+  const presentation=mountPresentation({
+    studyLabel:study.title,datasetLabel:datasetDefinitions.casebook.label,resolveTarget:resolvePresentationTarget,
+    validate(definitions){
+      const blockers=[],omitted=[],available=[];
+      if(!datasetDefinitions.casebook)blockers.push('The reference dataset is unavailable.');
+      for(const id of ['P03','P06','P16'])if(!anchorPatients.some(patient=>patient.id===id))blockers.push(`Required reference patient ${id} is unavailable.`);
+      if(!resolveScenario(clinicalConfig,'renal-revision').active)blockers.push('The existing proposed renal scenario is not executable.');
+      if(!sources.some(source=>source.id==='SYN-PK-02'&&source.passage))blockers.push('The required fictional renal evidence passage is unavailable.');
+      if(blockers.length)return {blockers,omitted,scenes:definitions};
+      const preview=createWorkspace({dataset:'casebook'}),seen=new Set();
+      const priority=evaluateDraft(anchorPatients.find(patient=>patient.id==='P03')||{}).profile;
+      for(const definition of definitions){
+        const ids=[definition.target,...(definition.beats||[]).map(beat=>beat.target)];
+        if(seen.has(definition.id)||!Number.isFinite(definition.holdMs)||definition.holdMs<=0){blockers.push('Scene IDs must be unique and hold durations must be positive.');continue;}seen.add(definition.id);
+        if(definition.readiness!=='analysis-and-target-settled'||definition.context.studyId!==preview.run.studyId){blockers.push(`${definition.title}: its readiness policy or study context is unavailable.`);continue;}
+        let missing=ids.find(id=>!presentationTargets[id]||!document.getElementById(presentationTargets[id][1]));
+        if(!missing){
+          if(!preview.run.patients.some(patient=>patient.id===definition.context.patientId)){blockers.push(`${definition.title}: the required patient is unavailable.`);continue;}
+          preview.setScenario(definition.context.scenario);preview.selectPatient(definition.context.patientId);preview.setDetailTab(definition.context.detailTab);
+          const probe=document.createElement('template');
+          const patientHtml=renderPatientDetail({state:preview.state,run:preview.run,sources,config:clinicalConfig,escape:e,icon});
+          probe.innerHTML=`<div id="patient-detail">${patientHtml}</div><div id="trial-charts">${renderTrialCharts(preview.run,preview.state,definition.view?.analysis||'eligibility',definition.view?.dimension||'age')}</div><div id="decision-content">${renderDecision(preview)}</div><div id="patient-queue">${renderPatientQueue({state:preview.state,run:preview.run,escape:e,icon})}</div><div id="tool-dialog">${definition.view?.report?renderReport(preview):''}</div>`;
+          missing=ids.find(id=>!['population','evidence-passage','guidance-documented','guidance-unresolved'].includes(id)&&!probe.content.querySelector(presentationTargets[id][0]));
+          if(!missing)missing=ids.find(id=>id==='guidance-documented'&&!presentationGuidanceTopic(preview.run,preview.state,true)||id==='guidance-unresolved'&&!presentationGuidanceTopic(preview.run,preview.state,false));
+        }
+        const reason=missing?`View target ${missing} is unavailable.`:definition.id==='priority'&&!Number.isFinite(priority?.score)?'No configured attention index is available.':null;
+        if(reason){if(definition.required)blockers.push(`${definition.title}: ${reason}`);else omitted.push({id:definition.id,title:definition.title,reason});}else available.push(definition);
+      }
+      return {blockers,omitted,scenes:available};
+    },
+    capture:capturePresentationView,restore:restorePresentationView,
+    cleanup(){if(presentationOwnedGroup&&workspace.state.filters.subgroup===presentationOwnedGroup)workspace.setFilters({subgroup:'all'});presentationOwnedGroup=null;},
+    async enter(definition,{signal,activity}){
+      signal.throwIfAborted();presentationNavigation=true;
+      try{
+        closePresentationViews();changeDataset(definition.context.dataset,activity);changeScenario(definition.context.scenario,activity);
+        workspace.setFilters({status:'all',age:'all',subgroup:'all',query:'',demographic:'all'});
+        navigate(definition.context.perspective,false);selectPatient(definition.context.patientId,'presentation');workspace.setDetailTab(definition.context.detailTab);
+        analysisView=definition.view?.analysis||'eligibility';analysisDimension=definition.view?.dimension||'age';
+        mobileDetailOpen=compactViewport.matches&&definition.context.perspective==='patient'&&definition.target!=='population';render();
+        for(const part of document.querySelectorAll('#patient-detail [data-brief-section]'))part.open=part.dataset.briefSection===definition.view?.brief;
+        const underlying=document.querySelector('#patient-detail .brief-underlying');if(underlying)underlying.open=Boolean(definition.view?.attention);
+        if(definition.view?.population==='overview')scene.showOverview();
+        if(definition.view?.evidenceId)openEvidence(definition.view.evidenceId);
+        if(definition.view?.group){workspace.setFilters({subgroup:definition.view.group});presentationOwnedGroup=definition.view.group;}
+        for(const row of document.querySelectorAll('#decision-content .guidance-row'))row.open=false;
+        const trace=document.querySelector('#decision-content .decision-trace');if(trace)trace.open=Boolean(definition.view?.trace);
+        if(definition.view?.trace){traceStep=definition.view.trace;traceCriterion='RENAL';render();document.querySelector('#decision-content .decision-trace').open=true;}
+        if(definition.view?.report)showTool('report');
+      }finally{presentationNavigation=false;}
+      await focusPresentationTarget(definition.target,signal);
+    },
+    async beat(definition,beat,{signal}){
+      signal.throwIfAborted();presentationNavigation=true;
+      try{
+        if(beat.action==='inspect-group'){inspectAnalysisGroup(beat.group,true);presentationOwnedGroup=beat.group;}
+        if(beat.action==='trace'){traceStep=beat.step;traceCriterion='RENAL';render();document.querySelector('#decision-content .decision-trace').open=true;}
+        if(beat.action.startsWith('guidance-')){
+          const row=presentationGuidanceTopic(workspace.run,workspace.state,beat.action==='guidance-documented');
+          if(!row)throw new Error('No applicable documented/open topic is available for this scene.');
+          if(beat.action==='guidance-documented')documentedTopic=row.id;else unresolvedTopic=row.id;
+          for(const entry of document.querySelectorAll('#decision-content .guidance-row'))entry.open=entry.dataset.guidanceTopic===row.id;
+        }
+      }finally{presentationNavigation=false;}
+      await focusPresentationTarget(beat.target,signal);
+    },
+  });
+
   workspace.subscribe(render);
   render();
   route();
-  return { workspace, scene };
+  return { workspace, scene, presentation: presentation.controller };
 }

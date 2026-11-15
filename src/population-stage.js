@@ -336,6 +336,9 @@ export function createConstellation(container, { onSelect = () => {} } = {}) {
   resize(); initialize();
   return {
     update, focusPatient, showOverview,
+    get transitioning(){return animation.running;},
+    getViewState:()=>({mode,groupId,pageIndex,fallback}),
+    restoreViewState(view){mode=view.mode==='focus'&&groups.some(group=>group.id===view.groupId)?'focus':'overview';groupId=mode==='focus'?view.groupId:null;pageIndex=view.pageIndex||0;fallback=Boolean(view.fallback||unavailable);signature='';reconcile(false);renderChrome();},
     getMarkerIds: () => registry.map(item => item.id),
     getDisplayedPatientIds: () => mode === 'focus' ? focusedPage.records.map(record => record.id) : [],
     setVisible(value) { shown = value; if (!shown) animation.settle(); else { resize(); requestDraw(); } },

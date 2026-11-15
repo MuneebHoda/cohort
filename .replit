@@ -1,0 +1,5 @@
+run = "HOST=0.0.0.0 PORT=5173 npm run dev"
+
+[[ports]]
+localPort = 5173
+externalPort = 80

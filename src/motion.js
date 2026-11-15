@@ -37,11 +37,13 @@ export function createStageTransition(onUpdate, onComplete) {
   };
 }
 export function transitionPanel(element, kind = 'panel') {
-  active.get(element)?.cancel();
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches || !element.animate) return;
+  const previous = active.get(element);
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { previous?.complete?.(); previous?.finish?.(); return; }
+  if (previous?.stop) previous.stop(); else previous?.cancel();
   const settings = motionSettings();
   const transform = kind === 'drawer' ? 'translateX(12px)' : 'translateY(5px)';
-  const animation = element.animate([{ opacity: .55, transform }, { opacity: 1, transform: 'translate(0)' }], { duration: settings.panel, easing: settings.ease });
+  const animation = globalThis.Motion?.animate ? globalThis.Motion.animate(element, {opacity:[.55,1],transform:[transform,'translate(0)']}, {duration:settings.panel/1000,ease:[.2,.75,.25,1]}) : element.animate?.([{ opacity: .55, transform }, { opacity: 1, transform: 'translate(0)' }], { duration: settings.panel, easing: settings.ease });
+  if (!animation) return;
   active.set(element, animation);
-  animation.finished.catch(() => {}).then(() => { if (active.get(element) === animation) active.delete(element); });
+  Promise.resolve(animation.finished || animation).catch(() => {}).then(() => { if (active.get(element) === animation) active.delete(element); });
 }

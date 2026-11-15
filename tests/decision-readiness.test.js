@@ -4,7 +4,7 @@ import { createWorkspace, datasetDefinitions, visibleRecords } from '../src/work
 import { buildDecisionBrief, attachDecisionBriefs } from '../src/decision-brief.js';
 import { getGuidanceRows, summarizeGuidance } from '../src/guidance-review.js';
 import { guidanceSources, guidancePassages } from '../src/guidance-sources.js';
-import { renderGuidanceReview, renderCriterionInspection } from '../src/review-views.js';
+import { renderGuidanceReview, renderCriterionInspection, renderDecisionBrief, renderBriefEvidence } from '../src/review-views.js';
 import { buildReviewPacket, renderReport, renderDecision } from '../src/studio-views.js';
 import { renderTrialCharts } from '../src/charts.js';
 import { exclusionRows, compositionComparison } from '../src/analysis-model.js';
@@ -36,15 +36,51 @@ test('every explanation fact, rule, version and evidence reference resolves to t
 });
 
 test('decision briefs stay concise and expose five specific sections instead of a thinking sequence', () => {
-  for(const dataset of ['casebook','case-hiv','case-access','case-preg','case-prior']){
+  for(const dataset of Object.keys(datasetDefinitions)){
     const w=createWorkspace({dataset});
-    for(const brief of Object.values(w.run.explanations)){
-      const words=[brief.conclusion,brief.reason,...brief.sections.map(section=>section.summary)].join(' ').split(/\s+/).length;
-      assert.ok(words>=90&&words<=160,`${brief.patientId}: ${words}`);
-      assert.deepEqual(brief.sections.map(section=>section.id),['original','reconsideration','limits','next','change']);
-      assert.doesNotMatch(brief.sections.map(section=>section.summary).join(' '),/stop medication|change doses|AI thinking|FDA approved/i);
+    for(const scenario of ['original',...(w.run.proposed.available!==false?['renal-revision']:[])]){
+      w.setScenario(scenario);
+      for(const brief of Object.values(w.run.explanations)){
+        const words=[brief.conclusion,brief.reason,...brief.sections.map(section=>section.summary)].join(' ').split(/\s+/).length;
+        assert.ok(words>=90&&words<=160,`${brief.patientId}/${scenario}: ${words}`);
+        assert.deepEqual(brief.sections.map(section=>section.id),['original','reconsideration','limits','next','change']);
+        assert.doesNotMatch(brief.sections.map(section=>section.summary).join(' '),/stop medication|change doses|AI thinking|FDA approved/i);
+      }
     }
   }
+});
+
+test('the retained independent restriction drives the headline and action before and after a favorable renal comparison', () => {
+  const w=reference();
+  for(const scenario of ['original','renal-revision']){
+    w.setScenario(scenario);const brief=w.run.explanations.P06;
+    assert.equal(brief.decisiveCriterionId,'DDI');
+    assert.match(brief.reason,/Strong CYP3A inhibitor: Yes/);
+    assert.match(brief.actions[0].action,/Concomitant medication/);
+    assert.ok(brief.reasonRefs.some(ref=>ref.kind==='field'&&ref.field==='strong_cyp3a_inhibitor'));
+    const criterion=brief.criteria.find(item=>item.criterionId==='DDI');
+    assert.equal(criterion.reason,w.run.current.records.find(record=>record.id==='P06').evaluations.find(item=>item.criterionId==='DDI').reason);
+    const html=renderDecisionBrief(brief);
+    assert.ok(html.indexOf('class="brief-next"')<html.indexOf('class="brief-five"'));
+  }
+});
+
+test('briefs retain actual measurement dates and do not invent dates for unmatched observations', () => {
+  const w=createWorkspace(),record=w.run.current.records.find(item=>item.measurements?.length);
+  assert.equal(w.run.explanations[record.id].facts.find(fact=>fact.field==='egfr_ml_min_1_73m2').date,record.measurements[0].date);
+  const changed=structuredClone(record);changed.measurements[0].value+=1;
+  assert.equal(buildDecisionBrief(w.run,changed).facts.find(fact=>fact.field==='egfr_ml_min_1_73m2').date,null);
+  assert.equal(reference().run.explanations.P03.facts.find(fact=>fact.field==='egfr_ml_min_1_73m2').date,null);
+});
+
+test('a retained authored interaction finding cites the assessment rather than the medication label alone', () => {
+  const w=createWorkspace({dataset:'case-hiv'}),brief=w.run.explanations['HIV-B'];
+  assert.equal(brief.decisiveCriterionId,'INTERACTION');
+  assert.match(brief.reason,/Interaction assessment: relevant concern/);
+  const html=renderBriefEvidence(brief);
+  assert.match(html,/data-inspect-criterion="INTERACTION"/);
+  assert.match(html,/Interaction assessment/);
+  assert.equal(brief.criteria.find(item=>item.criterionId==='INTERACTION').result,'FAIL');
 });
 
 test('a recorded screening statement remains separate from computed exclusion reasons', () => {
@@ -66,6 +102,7 @@ test('renal reconsideration cites the actual renal observation and preserves ori
   assert.ok(!brief.blockers.some(item=>item.kind==='failed_criterion'));
   assert.match(renderCriterionInspection(w.run,'P03','RENAL','original'),/eGFR 49 does not meet/);
   assert.match(renderCriterionInspection(w.run,'P03','RENAL'),/PASS/);
+  assert.ok(getGuidanceRows(w.run,w.state,'P03').find(row=>row.id==='rationale').criterionRefs.some(ref=>ref.criterionId==='RENAL'&&ref.phase==='original'));
 });
 
 test('hard restrictions and their fictional supporting evidence survive favorable proposed review', () => {
@@ -80,7 +117,7 @@ test('missing required information is neither imputed nor removed from the expla
   const w=reference();w.setScenario('renal-revision');const b=w.run.explanations.P16;
   assert.equal(b.activeStatus,'indeterminate');assert.ok(b.blockers.some(item=>item.kind==='unknown_criterion'));
   assert.ok(b.facts.some(fact=>fact.field==='hepatic_status'&&fact.value===null));
-  assert.match(b.sections.find(section=>section.id==='change').summary,/unknowns remain/);
+  assert.match(b.sections.find(section=>section.id==='change').summary,/1 unknown remain.*Hepatic impairment/);
 });
 
 test('an unmentioned interaction is not explained as a completed negative assessment', () => {
@@ -146,6 +183,36 @@ test('documentation linkage cannot automatically perform substantive review or c
   assert.equal(w.run.current.records.find(record=>record.id==='HIV-A').status,'excluded');
 });
 
+test('topic mappings use relevant rules and never mistake a laboratory method for participation support', () => {
+  const w=createWorkspace({dataset:'case-renal'}),rows=getGuidanceRows(w.run,w.state,'RENAL-A');
+  assert.ok(rows.find(row=>row.id==='organ').criterionIds.includes('RENAL'));
+  assert.deepEqual(rows.find(row=>row.id==='accommodation').factFields,[]);
+  assert.deepEqual(rows.find(row=>row.id==='population').criterionIds,[]);
+  assert.equal(rows.find(row=>row.id==='accommodation').documentationStatus,'Documentation missing');
+  const hiv=createWorkspace({dataset:'case-hiv'}),drug=getGuidanceRows(hiv.run,hiv.state,'HIV-A').find(row=>row.id==='drug');
+  assert.ok(drug.factFields.includes('current_antiretroviral_medications'));assert.ok(drug.factFields.includes('interaction_assessment'));
+});
+
+test('source-verification-pending rows withhold the passage without altering eligibility or review status', () => {
+  const w=createWorkspace({dataset:'case-hiv'}),run={...w.run,evidenceRegistry:w.run.evidenceRegistry.map(source=>({...source,verified:false}))};
+  const row=getGuidanceRows(run,w.state,'HIV-A').find(item=>item.id==='broad');
+  assert.equal(row.sourceVerified,false);assert.equal(row.reviewStatus,'not_reviewed');
+  const html=renderGuidanceReview({run,state:w.state});
+  assert.match(html,/Source passage verification pending/);
+  assert.doesNotMatch(html,/Commonly reused restrictions can exclude groups/);
+  assert.equal(run.explanations['HIV-A'].activeStatus,'excluded');
+});
+
+test('open-question navigation retains the actual recorded question and independent documentation gap', () => {
+  const w=createWorkspace({dataset:'case-hiv'});
+  w.recordGuidanceReview({patientId:'HIV-A',topicId:'drug',status:'questions_open',rationale:'Does the primary evidence cover this ART regimen?',evidenceNotes:'Only the secondary summary was supplied.'});
+  const row=getGuidanceRows(w.run,w.state,'HIV-A').find(item=>item.id==='drug');
+  assert.equal(row.openQuestion,'Does the primary evidence cover this ART regimen?');
+  assert.equal(row.documentationStatus,'Documentation missing');
+  assert.match(renderGuidanceReview(w),/data-guidance-open="drug"/);
+  assert.match(renderGuidanceReview(w),/Does the primary evidence cover this ART regimen/);
+});
+
 test('review and not-applicable dispositions require both a rationale and information actually considered', () => {
   const w=createWorkspace({dataset:'case-hiv'});
   const input={patientId:'HIV-A',topicId:'drug',status:'reviewed',rationale:'Specific review.',evidenceNotes:'Specified source.'};
@@ -192,6 +259,14 @@ test('every configured flow contributes exactly one transition for each actual p
   }
 });
 
+test('flow counts are visible and provide the same exact patient links as their ribbons', () => {
+  const w=reference(),html=renderTrialCharts(w.run,w.state);
+  assert.match(html,/class="flow-counts"/);
+  assert.match(html,/data-analysis-group="flow:excluded:eligible"[^>]*>6<\/button>/);
+  assert.match(html,/role="group" aria-label="Eligibility transitions/);
+  assert.deepEqual([...w.run.chartGroups.find(group=>group.id==='flow:excluded:eligible').ids].sort(),changedIds);
+});
+
 test('overlapping exclusion bars keep unique IDs per criterion and never admit every renal failure', () => {
   const w=reference(), rows=exclusionRows(w.run), renal=rows.find(row=>row.id==='RENAL'),ddi=rows.find(row=>row.id==='DDI');
   assert.ok(renal.affected.includes('P06')&&ddi.affected.includes('P06'));assert.ok(rows.reduce((sum,row)=>sum+row.affected.length,0)>w.run.current.excluded);
@@ -214,10 +289,31 @@ test('absent demographics and unconfigured comparison rates remain explicit inst
   w.setDataset('case-hiv');const model=compositionComparison(w.run,'age');assert.equal(model.proposedAvailable,false);assert.ok(model.rows.every(row=>row.proposedComposition===null&&row.proposedWithin===null));
 });
 
+test('each case has a clinical composition partition built only from its recorded field', () => {
+  for(const [dataset,field] of [['case-hiv','hiv_status'],['case-brain','current_stability_assessment'],['case-older','current_cardiac_status'],['case-access','functional_support_needs'],['case-cognitive','communication_support_needs'],['case-prior','current_cancer_activity'],['case-preg','pregnancy_status'],['case-renal','renal_stable']]){
+    const w=createWorkspace({dataset}),model=compositionComparison(w.run,'clinical');
+    assert.equal(model.overlapping,false);assert.equal(model.rows.reduce((sum,row)=>sum+row.screened,0),50);
+    for(const row of model.rows){
+      const screened=w.run.current.records.filter(record=>record[field]==null?row.id==='unknown':String(record[field])===row.id);
+      assert.equal(row.screened,screened.length);
+      assert.equal(row.originalWithin.denominator,screened.length);
+      assert.equal(row.originalComposition.denominator,w.run.original.eligible);
+      w.setFilters({subgroup:row.originalGroupId});
+      assert.deepEqual(ids(visibleRecords(w.run,w.state.filters)),screened.filter(record=>record.currentProtocolEvaluation.status==='eligible').map(record=>record.id).sort());
+    }
+  }
+});
+
 test('patient criterion matrix uses actual active results and opens absent checks as unconfigured', () => {
   const w=reference();w.setScenario('renal-revision');assert.match(renderTrialCharts(w.run,w.state,'matrix'),/Inspect P03 Renal function: PASS/);
   w.setDataset('case-preg');assert.match(renderTrialCharts(w.run,w.state,'matrix'),/Not configured/);
   assert.match(renderCriterionInspection(w.run,'PREG-A','PREG_CONCERN'),/Not configured in this record/);
+});
+
+test('criterion matrix labels explicitly absent conditions without implying a completed assessment', () => {
+  const w=createWorkspace({dataset:'case-hiv'}),html=renderTrialCharts(w.run,w.state,'matrix');
+  assert.match(html,/Inspect HIV-D Current HIV protocol wording: Not applicable \(engine PASS\)/);
+  assert.equal(w.run.explanations['HIV-D'].criteria.find(item=>item.criterionId==='HIV_POLICY').result,'PASS');
 });
 
 test('primary analytical views use at most two charts and keep deeper analysis behind explicit controls', () => {
@@ -233,4 +329,8 @@ test('reports preserve the exact explanation, open questions, actual annotations
   const packet=buildReviewPacket(w);assert.equal(packet.analysis,w.run);assert.equal(packet.decisionBrief,w.run.explanations.P03);assert.deepEqual(packet.filteredPatientIds.sort(),changedIds);
   assert.deepEqual(packet.guidanceReview.rows,getGuidanceRows(w.run,w.state,'P03'));assert.match(renderReport(w),/questions open/i);assert.match(renderReport(w),/SYN-PK-02/);assert.match(renderReport(w),/Filtered review scope/);
   assert.match(renderDecision(w),/FDA Guidance Alignment/);assert.equal(w.run.ranked.length,6);
+  const html=renderReport(w);
+  for(const source of guidanceSources){assert.ok(html.includes(source.verifiedAt));assert.ok(html.includes(source.url));assert.ok(html.includes(source.documentType));}
+  assert.match(html,/Versions & recorded before \/ after values/);
+  assert.match(html,/activeMedicalStatus/);
 });

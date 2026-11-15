@@ -17,6 +17,21 @@ npm run build
 
 `dist/` is the static build, including local Three.js/Motion bundles and their MIT licenses. Serve it at a site's root. To use a different local port: `PORT=5174 npm run dev`. State and events are held in this browser tab: perspective changes preserve the run, selection, filters and working dataset. Reload clears the session. Reset restores the selected dataset's immutable baseline (500, 20, or the selected 50-record case pack), removes its working additions, and retains the current perspective, other dataset working copy and actual session history.
 
+## Update the existing Replit app
+
+1. Open **Git**, select `main`, and pull from `https://github.com/MuneebHoda/cohort`. Preserve any uncommitted Replit edits before pulling.
+2. Run `npm ci` in the Replit Shell, then press **Run**. The checked-in `.replit` command binds the preview server to `0.0.0.0:5173` and maps it to the web Preview. Ordinary local development still binds to `127.0.0.1`.
+3. Open **Presentation** in the app header to confirm the new version.
+4. To update the public site, open **Publishing** and publish/republish after pulling. For a Static deployment, use build command `npm ci && npm run build` and public directory `dist`. A Git pull or Preview restart alone does not update the published snapshot.
+
+The repository builds to plain static files. Static publishing settings apply when the existing Replit app offers that deployment type; Agent-created apps may use a different deployment type. Preserve the existing deployment settings when republishing those apps.
+
+## Guided Presentation
+
+Choose **Presentation** in the header, then **Start presentation** for **Cohort — From Exclusion to Evidence**. The twelve-scene reference story contains five minutes of speaking time, excluding preparation and pauses. It operates the real patient, evidence, scenario, chart, guidance, trace and report views. Edit scene durations, captions and notes in [`src/presentation-scenes.js`](src/presentation-scenes.js).
+
+Use Pause, Previous, Next or the scene picker; Space and the arrow keys work outside native editing controls, and Escape exits. Deliberate application interaction pauses the tour and offers **Return to this scene and continue** or **Continue with the next scene**. Exit restores the earlier view while retaining deliberate edits and reviewer notes. The final report stops with Replay and Exit; no narration, approvals, printing or downloads happen automatically. See the [presentation handoff and screenshots](docs/presentation/HANDOFF.md) for the sequence, integration and verified behavior.
+
 ## Three-minute demonstration
 
 1. Patient Review opens **Expanded cohort — 500 synthetic patients**. Select **Proposed renal**, then **Newly matching**. The paginated queue includes all 80 new matches; 78 have complete attention-index inputs, while two remain unscored. The population overview aggregates all 500 records into four proportional segments of a sculptural ring. Select a segment to inspect up to six labelled patient spheres (three on a phone); exact ranges and paging keep every record accessible. Open **Patients 500** for the complete searchable, ranked table in a persistent drawer. Segment focus does not change analysis filters or counts.
@@ -90,11 +105,11 @@ See [the complete handoff](docs/exclusion-investigation/HANDOFF.md) for changed 
 
 ## Architecture and main functions
 
-The Decision Brief and review-readiness milestone adds a shared, versioned explanation at `analysis.explanations[patientId]`. Patient Review now leads with a concise five-part brief, exact recorded-versus-computed reasons, dated facts, evidence supporting reconsideration/retention, remaining blockers and a specific next action. The same object is used by the HTML/JSON report. Detailed clinical profiles and the existing attention index remain available on expansion.
+The Decision Brief and review-readiness milestone (explanation/mapping v1.1.0) adds a shared, versioned explanation at `analysis.explanations[patientId]`. Patient Review now leads with a concise five-part brief, exact recorded-versus-computed reasons, dated facts, evidence supporting reconsideration/retention, remaining blockers and a specific next action. The same object is used by the HTML/JSON report. Decisive independent failures drive the headline and action, actual matching measurement dates are retained, and the next action appears beside the conclusion. Detailed clinical profiles and the existing attention index remain available on expansion.
 
 Decision Review starts with **FDA Guidance Alignment & Review Readiness**: six application review questions linked to inspected FDA passages, independent documentation/reviewer statuses, open questions and rationale-required actual annotations. Source verification never creates a substantive review or changes eligibility. The existing decision trace and actual actions remain one disclosure away. Review drafts survive trace inspection; recorded actions retain actor, timestamp, versions, rationale and before/after context.
 
-Trial Strategy defaults to two linked charts: the eligibility flow and current exclusion reasons. **Population composition** separates group composition from within-group matching, including unknown/not-collected data. **Patient × criterion** provides paginated actual results and input/evidence inspection. Every chart drill-down uses exact patient IDs in the existing shared filter; a proposed-preview selection leaves the active scenario unchanged. Unconfigured scenarios are labelled explicitly. See the [complete Decision Review handoff](docs/decision-review/HANDOFF.md) for exact demo navigation, inspected passages, screenshots, reviewer questions and verification.
+Trial Strategy defaults to two linked charts: the eligibility flow with a visible exact-count transition matrix and current exclusion reasons. **Population composition** separates group composition from within-group matching, including unknown/not-collected data. Every case pack also exposes composition from a recorded clinical field; the expanded cohort includes its collected gender categories. **Patient × criterion** provides paginated actual results, explicit not-applicable labels, and input/evidence inspection. Every chart drill-down uses exact patient IDs in the existing shared filter; a proposed-preview selection leaves the active scenario unchanged. Unconfigured scenarios are labelled explicitly. See the [complete Decision Review handoff](docs/decision-review/HANDOFF.md) for exact demo navigation, inspected passages, screenshots, reviewer questions and verification.
 
 - `src/clinical-fixture.js`: `clinicalConfig` and the reduced supplied `demoCase`; all executable thresholds, units, criterion definitions, rule versions, evidence references, and scenario approval states.
 - `src/cohort.js`: pure `resolveScenario(config, requested)`, `evaluatePatient(patient, requested, config)`, and `evaluateCohort(patients, requested, config)`. `requested` is `false`, `true` (approved renal scenario), or an explicit predefined scenario ID.

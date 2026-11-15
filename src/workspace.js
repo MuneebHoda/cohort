@@ -205,19 +205,19 @@ export function createWorkspace({ dataset = 'expanded' } = {}) {
     },
     setQueuePage(page) { const maximum = Math.max(0, Math.ceil(visibleRecords(run, state.filters).length / queuePageSize) - 1); if (!Number.isInteger(page) || page < 0 || page > maximum) throw new RangeError('Unknown patient table page.'); if (page !== state.queuePage) { update({ queuePage: page }); notify(); } },
     setCompositionDimension(field) { if (field !== 'age' && !demographicDefinitions.some(item => item.id === field)) throw new TypeError('Unknown composition dimension.'); if (field !== state.compositionDimension) { update({ compositionDimension: field }); notify(); } },
-    setScenario(id) {
+    setScenario(id, activity = {}) {
       if (run.casePack && id !== 'original' && !(run.casePack.id === 'RENAL' && id === 'renal-revision')) throw new TypeError('A proposed medical scenario requires case-specific configuration.');
       if (id !== 'original' && !clinicalConfig.scenarios.some(scenario => scenario.id === id)) throw new TypeError('Unknown scenario.');
       if (id === state.scenarioId) return;
       const priorScenarioId = state.scenarioId;
-      update({ scenarioId: id }); analyze('scenario-changed', id === 'original' ? 'Restored original protocol rules.' : 'Requested the predefined synthetic scenario; evidence gates determine whether its rule is applied.', { priorScenarioId, newScenarioId: id }); notify();
+      update({ scenarioId: id }); analyze('scenario-changed', id === 'original' ? 'Restored original protocol rules.' : 'Requested the predefined synthetic scenario; evidence gates determine whether its rule is applied.', { priorScenarioId, newScenarioId: id, ...(activity.activity==='presentation'?{activity:'presentation',presentationSessionId:activity.presentationSessionId,actor:'Presentation playback'}:{}) }); notify();
     },
-    setDataset(value) {
+    setDataset(value, activity = {}) {
       if (!Object.hasOwn(datasetDefinitions, value)) throw new TypeError('Unknown synthetic dataset.');
       if (value === state.dataset) return;
       const caseChanged = Boolean(datasetDefinitions[value].casePackId || run.casePack);
       update({ dataset: value, datasetVersion: additions[value].length ? `${datasetDefinitions[value].version}-working-${revisions[value]}` : datasetDefinitions[value].version, ...(caseChanged ? { scenarioId: 'original', filters: filtersInitial(), compositionDimension: 'age' } : {}) });
-      analyze('dataset-changed', `Opened ${datasetDefinitions[value].label}.`); notify();
+      analyze('dataset-changed', `Opened ${datasetDefinitions[value].label}.`, activity.activity==='presentation'?{activity:'presentation',presentationSessionId:activity.presentationSessionId,actor:'Presentation playback'}:{}); notify();
     },
     setDetailTab(tab) { if (!['overview', 'criteria', 'evidence', 'pathway'].includes(tab)) throw new TypeError('Unknown patient detail tab.'); if (tab !== state.detailTab) { update({ detailTab: tab }); notify(); } },
     setEvidence(idOrNull) { if (idOrNull !== null && !run.evidenceRegistry.some(source => source.id === idOrNull)) throw new TypeError('Unknown evidence ID.'); if (idOrNull !== state.selectedEvidenceId) { update({ selectedEvidenceId: idOrNull }); notify(); } },
